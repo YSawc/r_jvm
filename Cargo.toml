@@ -1,5 +1,5 @@
 [package]
-name = "r-jvm"
+name = "r_jvm"
 version = "0.1.0"
 authors = ["YSawc <niceage6690@gmail.com>"]
 edition = "2018"
