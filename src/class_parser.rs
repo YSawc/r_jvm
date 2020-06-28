@@ -1,16 +1,9 @@
+use super::class_file;
 use std::fs::File;
 use std::io::{BufReader, Read};
 
 pub struct ClassFileReader {
     reader: BufReader<File>,
-}
-
-macro_rules! exist {
-    ($expr:expr) => {{
-        if !$expr {
-            return None;
-        }
-    }};
 }
 
 impl ClassFileReader {
@@ -25,11 +18,11 @@ impl ClassFileReader {
         })
     }
 
-    pub fn read_16(&mut self) -> Option<u16> {
+    pub fn read_u16(&mut self) -> Option<u16> {
         let mut buf = [0u8; 2];
         match self.reader.read(&mut buf) {
             Ok(sz) => {
-                assert_eq!(sz, 4);
+                assert_eq!(sz, 2);
                 Some(((buf[0] as u16) << 8) + buf[1] as u16)
             }
             Err(_) => None,
@@ -53,8 +46,13 @@ impl ClassFileReader {
     }
 
     pub fn read(&mut self) -> Option<()> {
-        let magic: u32 = self.read_u32()?;
-        assert_eq!(magic, 0xCAFEBABE);
+        let mut class_file = class_file::ClassFile::new();
+        class_file.magic = self.read_u32()?;
+        assert_eq!(class_file.magic, 0xCAFEBABE);
+        class_file.minor_version = self.read_u16()?;
+        println!("minor_version : {}", class_file.minor_version);
+        class_file.major_version = self.read_u16()?;
+        println!("major_version : {}", class_file.major_version);
         Some(())
     }
 }
