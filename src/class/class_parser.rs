@@ -12,7 +12,6 @@ impl ClassFileReader {
             Ok(file) => file,
             Err(_) => return None,
         };
-
         Some(ClassFileReader {
             reader: BufReader::new(file),
         })
@@ -53,6 +52,8 @@ impl ClassFileReader {
         println!("minor_version : {}", class_file.minor_version);
         class_file.major_version = self.read_u16()?;
         println!("major_version : {}", class_file.major_version);
+        class_file.constant_pool_count = self.read_u16()?;
+        println!("constant_pool_count : {}", class_file.constant_pool_count);
         Some(())
     }
 }
