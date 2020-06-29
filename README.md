@@ -1,1 +1,1 @@
-For learing jvm very thank for [ferrugo](https://github.com/maekawatoshiki/ferrugo).
+For learing jvm very thank to [ferrugo](https://github.com/maekawatoshiki/ferrugo).
