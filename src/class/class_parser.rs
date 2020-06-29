@@ -105,7 +105,10 @@ impl ClassFileReader {
 
     fn read_utf8(&mut self) -> Option<Constant> {
         let length = self.read_u16()?;
-        let bytes = self.read_u8()?;
+        let mut bytes = vec![];
+        for _ in 0..=length - 1 {
+            bytes.push(self.read_u8());
+        }
         Some(Constant::Utf8Info { length, bytes })
     }
 
