@@ -202,13 +202,45 @@ impl ClassFileReader {
         class_file.constant_pool_count = self.read_u16()?;
         println!("constant_pool_count : {}", class_file.constant_pool_count);
 
-        for _ in 0..=class_file.constant_pool_count {
+        for _ in 0..=class_file.constant_pool_count - 2 {
             let tg = self.read_u8()?;
             let c_ty = index_to_constant_type(tg)?;
             println!("tag : {}", tg);
             println!("info : {:?}", self.read_constant(c_ty));
         }
 
+        println!("test");
+        class_file.access_flags = self.read_u16()?;
+        println!("access_flags : {}", class_file.access_flags);
+
+        class_file.this_class = self.read_u16()?;
+        println!("this_class : {}", class_file.this_class);
+
+        class_file.super_class = self.read_u16()?;
+        println!("super_class : {}", class_file.super_class);
+
+        class_file.interfaces_count = self.read_u16()?;
+        println!("interfaces_count : {}", class_file.interfaces_count);
+
+        for _ in 0..=class_file.interfaces_count {}
+
+        class_file.fields_count = self.read_u16()?;
+        println!("fields_count : {}", class_file.fields_count);
+
+        for _ in 0..=class_file.fields_count {}
+
+        class_file.methods_count = self.read_u16()?;
+        println!("methods_count : {}", class_file.methods_count);
+
+        for _ in 0..=class_file.methods_count {}
+
+        class_file.attributes_count = self.read_u16()?;
+        println!(
+            "attributes_count interfaces_count : {}",
+            class_file.attributes_count
+        );
+
+        for _ in 0..=class_file.attributes_count {}
         Some(())
     }
 }
