@@ -3,6 +3,7 @@ use super::constant::{index_to_constant_type, Constant, ConstantType};
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::{BufReader, Read};
+use std::str;
 
 #[derive(Debug)]
 pub struct ClassFileReader {
@@ -105,11 +106,13 @@ impl ClassFileReader {
 
     fn read_utf8(&mut self) -> Option<Constant> {
         let length = self.read_u16()?;
-        let mut bytes = vec![];
+        let mut bytes: Vec<u8> = Vec::with_capacity(length as usize);
         for _ in 0..=length - 1 {
-            bytes.push(self.read_u8());
+            bytes.push(self.read_u8().unwrap());
         }
-        Some(Constant::Utf8Info { length, bytes })
+        let str = str::from_utf8(&bytes).unwrap().to_string();
+
+        Some(Constant::Utf8Info { length, str })
     }
 
     fn read_method_handle(&mut self) -> Option<Constant> {

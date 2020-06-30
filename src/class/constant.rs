@@ -1,5 +1,3 @@
-use std::vec::Vec;
-
 pub enum ConstantType {
     Class,
     Fieldref,
@@ -77,7 +75,7 @@ pub enum Constant {
     },
     Utf8Info {
         length: u16,
-        bytes: Vec<Option<u8>>,
+        str: String,
     },
     MethodHandleInfo {
         reference_kind: u8,
