@@ -1,5 +1,7 @@
-use super::class_file;
+use super::attribute::{Attribute, AttributeInfo};
+use super::class_file::ClassFile;
 use super::constant::{index_to_constant_type, Constant, ConstantType};
+use super::field::FieldInfo;
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::{BufReader, Read};
@@ -137,6 +139,60 @@ impl ClassFileReader {
             name_and_type_index,
         })
     }
+}
+
+// FieldInfo
+impl ClassFileReader {
+    fn read_field_info(&mut self, constant_pool: &Vec<Constant>) -> Option<FieldInfo> {
+        let access_flags = self.read_u16()?;
+        let name_index = self.read_u16()?;
+        let descriptor_index = self.read_u16()?;
+        let attributes_count = self.read_u16()?;
+        let mut attributes = vec![];
+        for _ in 0..attributes_count {
+            attributes.push(self.read_attribute_info(constant_pool)?);
+        }
+
+        Some(FieldInfo {
+            access_flags,
+            name_index,
+            descriptor_index,
+            attributes_count,
+            attributes,
+        })
+    }
+}
+
+// attribute
+impl ClassFileReader {
+    fn read_attribute_info(&mut self, constant_pool: &Vec<Constant>) -> Option<AttributeInfo> {
+        let attribute_name_index = self.read_u16()?;
+        let attribute_length = self.read_u32()?;
+        let name = constant_pool[attribute_name_index as usize].get_utf8()?;
+        let info = match name.as_str() {
+            "ConstantValue" => self.read_constant_value()?,
+            "Code" => self.read_code()?,
+            _ => Attribute::None,
+        };
+
+        Some(AttributeInfo {
+            attribute_name_index,
+            attribute_length,
+            info,
+        })
+    }
+
+    fn read_constant_value(&mut self) -> Option<Attribute> {
+        let attribute_name = self.read_u16()?;
+        let attribute_length = self.read_u32()?;
+        let constant_value = self.read_u16()?;
+        Some(Attribute::ConstantValue {
+            attribute_name,
+            attribute_length,
+            constant_value,
+        })
+    }
+
 }
 
 impl ClassFileReader {

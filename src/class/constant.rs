@@ -89,3 +89,12 @@ pub enum Constant {
         name_and_type_index: u16,
     },
 }
+
+impl Constant {
+    pub fn get_utf8(&self) -> Option<&String> {
+        match self {
+            Constant::Utf8Info { str, .. } => Some(str),
+            _ => None,
+        }
+    }
+}
