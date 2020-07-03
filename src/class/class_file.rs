@@ -1,5 +1,6 @@
 use super::constant::Constant;
 
+#[derive(Debug)]
 pub struct ClassFile {
     pub magic: u32,
     pub minor_version: u16,
@@ -10,7 +11,7 @@ pub struct ClassFile {
     pub this_class: u16,
     pub super_class: u16,
     pub interfaces_count: u16,
-    pub interfaces: Vec<()>,
+    pub interfaces: Vec<Constant>,
     pub fields_count: u16,
     pub fields: Vec<()>,
     pub methods_count: u16,

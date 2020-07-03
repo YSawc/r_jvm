@@ -1,4 +1,4 @@
-use super::attribute::{Attribute, AttributeInfo};
+use super::attribute::{Attribute, AttributeInfo, CodeAttribute, Exception};
 use super::class_file::ClassFile;
 use super::constant::{index_to_constant_type, Constant, ConstantType};
 use super::field::FieldInfo;
@@ -170,8 +170,8 @@ impl ClassFileReader {
         let attribute_length = self.read_u32()?;
         let name = constant_pool[attribute_name_index as usize].get_utf8()?;
         let info = match name.as_str() {
-            "ConstantValue" => self.read_constant_value()?,
-            "Code" => self.read_code()?,
+            "ConstantValue" => self.read_constant_value_attribute()?,
+            "Code" => self.read_code_attribute(constant_pool)?,
             _ => Attribute::None,
         };
 
@@ -182,17 +182,53 @@ impl ClassFileReader {
         })
     }
 
-    fn read_constant_value(&mut self) -> Option<Attribute> {
-        let attribute_name = self.read_u16()?;
-        let attribute_length = self.read_u32()?;
+    fn read_constant_value_attribute(&mut self) -> Option<Attribute> {
         let constant_value = self.read_u16()?;
-        Some(Attribute::ConstantValue {
-            attribute_name,
-            attribute_length,
-            constant_value,
-        })
+        Some(Attribute::ConstantValue { constant_value })
     }
 
+    fn read_code_attribute(&mut self, constant_pool: &Vec<Constant>) -> Option<Attribute> {
+        let max_stack = self.read_u16()?;
+        let max_locals = self.read_u16()?;
+        let code_length = self.read_u32()?;
+        let mut code = vec![];
+        for _ in 0..code_length {
+            code.push(self.read_u8()?);
+        }
+        let exception_table_length = self.read_u16()?;
+        let mut exception_table = vec![];
+        for _ in 0..exception_table_length {
+            exception_table.push(self.read_exception()?);
+        }
+        let attributes_count = self.read_u16()?;
+        let mut attributes = vec![];
+        for _ in 0..attributes_count {
+            attributes.push(self.read_attribute_info(constant_pool)?)
+        }
+        Some(Attribute::Code(CodeAttribute {
+            max_stack,
+            max_locals,
+            code_length,
+            code: Box::into_raw(Box::new(code)),
+            exception_table_length,
+            exception_table,
+            attributes_count,
+            attributes,
+        }))
+    }
+
+    fn read_exception(&mut self) -> Option<Exception> {
+        let start_pc = self.read_u16()?;
+        let end_pc = self.read_u16()?;
+        let handler_pc = self.read_u16()?;
+        let catch_type = self.read_u16()?;
+        Some(Exception {
+            start_pc,
+            end_pc,
+            handler_pc,
+            catch_type,
+        })
+    }
 }
 
 impl ClassFileReader {
