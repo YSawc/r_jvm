@@ -168,7 +168,7 @@ impl ClassFileReader {
     fn read_attribute_info(&mut self, constant_pool: &Vec<Constant>) -> Option<AttributeInfo> {
         let attribute_name_index = self.read_u16()?;
         let attribute_length = self.read_u32()?;
-        let name = constant_pool[attribute_name_index as usize].get_utf8()?;
+        let name = constant_pool[attribute_name_index as usize - 1].get_utf8()?;
         let info = match name.as_str() {
             "ConstantValue" => self.read_constant_value_attribute()?,
             "Code" => self.read_code_attribute(constant_pool)?,
