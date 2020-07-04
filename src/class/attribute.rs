@@ -16,9 +16,20 @@ pub struct CodeAttribute {
 }
 
 pub enum Attribute {
-    ConstantValue { constant_value: u16 },
+    ConstantValue {
+        constant_value: u16,
+    },
 
     Code(CodeAttribute),
+    Exceptions {
+        number_of_exceptions: u16,
+        exception_index_table: Vec<u16>,
+    },
+
+    LineNumberTable {
+        line_number_table_length: u16,
+        line_number_table: Vec<LineNumber>,
+    },
     None,
 }
 

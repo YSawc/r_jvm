@@ -172,6 +172,7 @@ impl ClassFileReader {
         let info = match name.as_str() {
             "ConstantValue" => self.read_constant_value_attribute()?,
             "Code" => self.read_code_attribute(constant_pool)?,
+            "ExceptionsAttribute" => self.read_exceptions_attribute()?,
             _ => Attribute::None,
         };
 
@@ -229,6 +230,19 @@ impl ClassFileReader {
             catch_type,
         })
     }
+
+    fn read_exceptions_attribute(&mut self) -> Option<Attribute> {
+        let number_of_exceptions = self.read_u16()?;
+        let mut exception_index_table = vec![];
+        for _ in 0..number_of_exceptions {
+            exception_index_table.push(self.read_u16()?)
+        }
+        Some(Attribute::Exceptions {
+            number_of_exceptions,
+            exception_index_table,
+        })
+    }
+
 }
 
 impl ClassFileReader {
