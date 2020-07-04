@@ -1,5 +1,4 @@
 use r_jvm::class;
-use r_jvm::util;
 
 fn main() {}
 
@@ -14,5 +13,5 @@ fn read_classfile() {
         }
     };
 
-    reader.read();
+    println!("{:?}", reader.read());
 }

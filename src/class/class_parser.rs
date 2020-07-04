@@ -1,7 +1,8 @@
-use super::attribute::{Attribute, AttributeInfo, CodeAttribute, Exception};
+use super::attribute::{Attribute, AttributeInfo, CodeAttribute, Exception, LineNumber};
 use super::class_file::ClassFile;
 use super::constant::{index_to_constant_type, Constant, ConstantType};
 use super::field::FieldInfo;
+use super::method::MethodInfo;
 use std::fmt::Debug;
 use std::fs::File;
 use std::io::{BufReader, Read};
@@ -31,7 +32,6 @@ impl ClassFileReader {
             ConstantType::InvokeDynamic => self.read_invoke_dynamic(),
         }
     }
-
     fn read_class(&mut self) -> Option<Constant> {
         let class_index = self.read_u16()?;
         Some(Constant::ClassInfo { class_index })
@@ -163,6 +163,29 @@ impl ClassFileReader {
     }
 }
 
+// method
+impl ClassFileReader {
+    fn read_method_info(&mut self, constant_pool: &Vec<Constant>) -> Option<MethodInfo> {
+        let access_flags = self.read_u16()?;
+        let name_index = self.read_u16()?;
+        let descriptor_index = self.read_u16()?;
+        let attributes_count = self.read_u16()?;
+        let mut attributes = vec![];
+        for _ in 0..attributes_count {
+            let a_attribute = self.read_attribute_info(constant_pool)?;
+            attributes.push(a_attribute);
+        }
+
+        Some(MethodInfo {
+            access_flags,
+            name_index,
+            descriptor_index,
+            attributes_count,
+            attributes,
+        })
+    }
+}
+
 // attribute
 impl ClassFileReader {
     fn read_attribute_info(&mut self, constant_pool: &Vec<Constant>) -> Option<AttributeInfo> {
@@ -173,6 +196,7 @@ impl ClassFileReader {
             "ConstantValue" => self.read_constant_value_attribute()?,
             "Code" => self.read_code_attribute(constant_pool)?,
             "ExceptionsAttribute" => self.read_exceptions_attribute()?,
+            "LineNumberTable" => self.read_line_number_table_attribute()?,
             _ => Attribute::None,
         };
 
@@ -243,6 +267,28 @@ impl ClassFileReader {
         })
     }
 
+    fn read_line_number_table_attribute(&mut self) -> Option<Attribute> {
+        let line_number_table_length = self.read_u16()?;
+        let mut line_number_table = vec![];
+        for _ in 0..line_number_table_length {
+            line_number_table.push(self.read_line_number()?);
+        }
+
+        Some(Attribute::LineNumberTable {
+            line_number_table_length,
+            line_number_table,
+        })
+    }
+
+    fn read_line_number(&mut self) -> Option<LineNumber> {
+        let start_pc = self.read_u16()?;
+        let line_number = self.read_u16()?;
+
+        Some(LineNumber {
+            start_pc,
+            line_number,
+        })
+    }
 }
 
 impl ClassFileReader {
@@ -345,8 +391,32 @@ impl ClassFileReader {
             "attributes_count interfaces_count : {}",
             class_file.attributes_count
         );
+        let mut methods = vec![];
+        for _ in 0..methods_count {
+            methods.push(self.read_method_info(&constant_pool)?);
+        }
 
         for _ in 0..=class_file.attributes_count {}
         Some(())
+
+        // for _ in 0..attributes_count {}
+        Some(ClassFile {
+            magic,
+            minor_version,
+            major_version,
+            constant_pool_count,
+            constant_pool,
+            access_flags,
+            this_class,
+            super_class,
+            interfaces_count,
+            interfaces,
+            fields_count,
+            fields: vec![],
+            methods_count,
+            methods,
+            attributes_count,
+            attributes: vec![],
+        })
     }
 }

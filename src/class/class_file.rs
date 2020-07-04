@@ -1,4 +1,5 @@
 use super::constant::Constant;
+use super::method::MethodInfo;
 
 #[derive(Debug)]
 pub struct ClassFile {
@@ -15,7 +16,7 @@ pub struct ClassFile {
     pub fields_count: u16,
     pub fields: Vec<()>,
     pub methods_count: u16,
-    pub methods: Vec<()>,
+    pub methods: Vec<MethodInfo>,
     pub attributes_count: u16,
     pub attributes: Vec<()>,
 }

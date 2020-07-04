@@ -39,3 +39,7 @@ pub struct Exception {
     pub handler_pc: u16,
     pub catch_type: u16,
 }
+pub struct LineNumber {
+    pub start_pc: u16,
+    pub line_number: u16,
+}
