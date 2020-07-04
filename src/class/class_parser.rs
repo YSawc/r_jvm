@@ -340,64 +340,65 @@ impl ClassFileReader {
         }
     }
 
-    pub fn read(&mut self) -> Option<()> {
-        let mut class_file = class_file::ClassFile::new();
-        class_file.magic = self.read_u32()?;
-        assert_eq!(class_file.magic, 0xCAFEBABE);
+    pub fn read(&mut self) -> Option<ClassFile> {
+        let magic = self.read_u32()?;
+        assert_eq!(magic, 0xCAFEBABE);
 
-        class_file.minor_version = self.read_u16()?;
-        println!("minor_version : {}", class_file.minor_version);
+        let minor_version = self.read_u16()?;
+        // println!("minor_version : {}", minor_version);
 
-        class_file.major_version = self.read_u16()?;
-        println!("major_version : {}", class_file.major_version);
+        let major_version = self.read_u16()?;
+        // println!("major_version : {}", major_version);
 
-        class_file.constant_pool_count = self.read_u16()?;
-        println!("constant_pool_count : {}", class_file.constant_pool_count);
+        let constant_pool_count = self.read_u16()?;
+        // println!("constant_pool_count : {}", constant_pool_count);
 
-        for _ in 0..=class_file.constant_pool_count - 2 {
+        let mut constant_pool = vec![];
+        for _ in 0..constant_pool_count - 1 {
             let tg = self.read_u8()?;
             let c_ty = index_to_constant_type(tg)?;
-            println!("tag : {}", tg);
-            println!("info : {:?}", self.read_constant(c_ty));
+            let cp = self.read_constant(c_ty)?;
+            // println!("constant_pool {:?}", cp);
+            constant_pool.push(cp);
+        }
+        // println!("constant_pool : {:?}", constant_pool);
+
+        let access_flags = self.read_u16()?;
+        // println!("access_flags : {}", access_flags);
+
+        let this_class = self.read_u16()?;
+        // println!("this_class : {}", this_class);
+
+        let super_class = self.read_u16()?;
+        // println!("super_class : {}", super_class);
+
+        let interfaces_count = self.read_u16()?;
+        // println!("interfaces_count : {}", interfaces_count);
+
+        let mut interfaces = vec![];
+        for _ in 0..interfaces_count {
+            interfaces.push(self.read_class()?);
+        }
+        // println!("interfaces : {:?}", interfaces);
+
+        let fields_count = self.read_u16()?;
+        // println!("fields_count : {}", fields_count);
+
+        for _ in 0..fields_count {
+            self.read_field_info(&constant_pool);
         }
 
-        println!("test");
-        class_file.access_flags = self.read_u16()?;
-        println!("access_flags : {}", class_file.access_flags);
+        let methods_count = self.read_u16()?;
+        // println!("methods_count : {}", methods_count);
 
-        class_file.this_class = self.read_u16()?;
-        println!("this_class : {}", class_file.this_class);
-
-        class_file.super_class = self.read_u16()?;
-        println!("super_class : {}", class_file.super_class);
-
-        class_file.interfaces_count = self.read_u16()?;
-        println!("interfaces_count : {}", class_file.interfaces_count);
-
-        for _ in 0..=class_file.interfaces_count {}
-
-        class_file.fields_count = self.read_u16()?;
-        println!("fields_count : {}", class_file.fields_count);
-
-        for _ in 0..=class_file.fields_count {}
-
-        class_file.methods_count = self.read_u16()?;
-        println!("methods_count : {}", class_file.methods_count);
-
-        for _ in 0..=class_file.methods_count {}
-
-        class_file.attributes_count = self.read_u16()?;
-        println!(
-            "attributes_count interfaces_count : {}",
-            class_file.attributes_count
-        );
         let mut methods = vec![];
         for _ in 0..methods_count {
             methods.push(self.read_method_info(&constant_pool)?);
         }
+        println!("methods : {:?}", methods);
 
-        for _ in 0..=class_file.attributes_count {}
-        Some(())
+        let attributes_count = self.read_u16()?;
+        // println!("attributes_count : {}", attributes_count);
 
         // for _ in 0..attributes_count {}
         Some(ClassFile {
