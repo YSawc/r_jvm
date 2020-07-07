@@ -211,7 +211,6 @@ impl ClassFileReader {
         let constant_value = self.read_u16()?;
         Some(Attribute::ConstantValue { constant_value })
     }
-
     fn read_code_attribute(&mut self, constant_pool: &Vec<Constant>) -> Option<Attribute> {
         let max_stack = self.read_u16()?;
         let max_locals = self.read_u16()?;
@@ -220,6 +219,7 @@ impl ClassFileReader {
         for _ in 0..code_length {
             code.push(self.read_u8()?);
         }
+        println!("code : {:?}", code);
         let exception_table_length = self.read_u16()?;
         let mut exception_table = vec![];
         for _ in 0..exception_table_length {
@@ -384,8 +384,9 @@ impl ClassFileReader {
         let fields_count = self.read_u16()?;
         // println!("fields_count : {}", fields_count);
 
+        let mut fields = vec![];
         for _ in 0..fields_count {
-            self.read_field_info(&constant_pool);
+            fields.push(self.read_field_info(&constant_pool)?);
         }
 
         let methods_count = self.read_u16()?;
@@ -395,12 +396,11 @@ impl ClassFileReader {
         for _ in 0..methods_count {
             methods.push(self.read_method_info(&constant_pool)?);
         }
-        println!("methods : {:?}", methods);
+        // println!("methods : {:?}", methods);
 
         let attributes_count = self.read_u16()?;
         // println!("attributes_count : {}", attributes_count);
 
-        // for _ in 0..attributes_count {}
         Some(ClassFile {
             magic,
             minor_version,
@@ -413,7 +413,7 @@ impl ClassFileReader {
             interfaces_count,
             interfaces,
             fields_count,
-            fields: vec![],
+            fields,
             methods_count,
             methods,
             attributes_count,

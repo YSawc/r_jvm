@@ -1,4 +1,5 @@
 use r_jvm::class;
+// use r_jvm::code::code::read_ope_code;
 
 fn main() {}
 
@@ -13,5 +14,7 @@ fn read_classfile() {
         }
     };
 
-    println!("{:?}", reader.read());
+    let class_file = reader.read();
+    println!("{:?}", class_file);
+    // read_ope_code(class_file)
 }
