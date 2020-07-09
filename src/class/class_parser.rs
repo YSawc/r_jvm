@@ -219,7 +219,7 @@ impl ClassFileReader {
         for _ in 0..code_length {
             code.push(self.read_u8()?);
         }
-        println!("code : {:?}", code);
+        // println!("code : {:?}", code);
         let exception_table_length = self.read_u16()?;
         let mut exception_table = vec![];
         for _ in 0..exception_table_length {
@@ -230,12 +230,11 @@ impl ClassFileReader {
         for _ in 0..attributes_count {
             attributes.push(self.read_attribute_info(constant_pool)?)
         }
-        // Some(Attribute::Code(CodeAttribute {
         Some(Attribute::Code {
             max_stack,
             max_locals,
             code_length,
-            code: Box::into_raw(Box::new(code)),
+            code,
             exception_table_length,
             exception_table,
             attributes_count,

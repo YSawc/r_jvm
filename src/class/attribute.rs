@@ -15,7 +15,7 @@ pub enum Attribute {
         max_stack: u16,
         max_locals: u16,
         code_length: u32,
-        code: *mut Vec<u8>,
+        code: Vec<u8>,
         exception_table_length: u16,
         exception_table: Vec<Exception>,
         attributes_count: u16,
