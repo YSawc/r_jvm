@@ -1,4 +1,4 @@
-use super::attribute::{Attribute, AttributeInfo, CodeAttribute, Exception, LineNumber};
+use super::attribute::{Attribute, AttributeInfo, Exception, LineNumber};
 use super::class_file::ClassFile;
 use super::constant::{index_to_constant_type, Constant, ConstantType};
 use super::field::FieldInfo;
@@ -230,7 +230,8 @@ impl ClassFileReader {
         for _ in 0..attributes_count {
             attributes.push(self.read_attribute_info(constant_pool)?)
         }
-        Some(Attribute::Code(CodeAttribute {
+        // Some(Attribute::Code(CodeAttribute {
+        Some(Attribute::Code {
             max_stack,
             max_locals,
             code_length,
@@ -239,7 +240,7 @@ impl ClassFileReader {
             exception_table,
             attributes_count,
             attributes,
-        }))
+        })
     }
 
     fn read_exception(&mut self) -> Option<Exception> {
