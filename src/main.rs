@@ -1,12 +1,13 @@
 use r_jvm::class;
 use r_jvm::class::attribute::Attribute;
-// use r_jvm::code::code;
+use r_jvm::code::code;
 
 fn main() {}
 
 #[test]
-fn read_classfile() {
+fn just_add_int() {
     let file_path: &str = "java/JustAddInt.class";
+    println!("read java/JustAddInt.class ..");
     let mut reader = match class::class_parser::ClassFileReader::new(file_path) {
         Some(reader) => reader,
         None => {
@@ -26,6 +27,8 @@ fn read_classfile() {
     } else {
         panic!()
     };
-    println!("{:?}", _code_length);
+    // println!("{:?}", _code_length);
     println!("{:?}", code);
+
+    code::read_ope_code(code);
 }

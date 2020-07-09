@@ -18,13 +18,16 @@ pub fn read_ope_code(v: &Vec<u8>) -> Option<u8> {
             27 => stack_machine.imm.push(stack_machine.i_st1 as u8),
             28 => stack_machine.imm.push(stack_machine.i_st2 as u8),
             60 => stack_machine.i_st1 = stack_machine.imm.pop()? as i8,
-            61 => stack_machine.i_st2 = v[n] as i8,
-            62 => stack_machine.i_st3 = v[n] as i8,
+            61 => stack_machine.i_st2 = stack_machine.imm.pop()? as i8,
+            62 => stack_machine.i_st3 = stack_machine.imm.pop()? as i8,
             96 => {
                 let tmp = stack_machine.imm.pop()? + stack_machine.imm.pop()?;
                 stack_machine.imm.push(tmp);
             }
-            117 => println!("stack_matchine : {:?}", stack_machine),
+            177 => {
+                println!("stack_matchine : {:?}", stack_machine);
+                return None;
+            }
             _ => {}
         }
     }
