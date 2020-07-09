@@ -30,5 +30,6 @@ fn just_add_int() {
     // println!("{:?}", _code_length);
     println!("{:?}", code);
 
-    code::read_ope_code(code);
+    let ret_v = code::read_ope_code(code);
+    println!("return value : {:?}", ret_v);
 }
