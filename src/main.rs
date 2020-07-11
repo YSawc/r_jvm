@@ -1,6 +1,6 @@
 use r_jvm::class;
 use r_jvm::class::attribute::Attribute;
-use r_jvm::code::code;
+use r_jvm::vm::vm;
 
 fn main() {}
 
@@ -30,6 +30,6 @@ fn just_add_int() {
     // println!("{:?}", _code_length);
     println!("{:?}", code);
 
-    let ret_v = code::read_ope_code(code);
+    let ret_v = vm::read_ope_code(code);
     println!("return value : {:?}", ret_v);
 }
