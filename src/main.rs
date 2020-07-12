@@ -18,10 +18,10 @@ fn just_add_int() {
         }
     };
 
-    let class_file_ptr = gc::new(reader.read());
-    let class_file = unsafe { &mut *class_file_ptr };
+    let mut gc = gc::ClassHeap::new();
+    gc.insert_class(reader.read().unwrap());
 
-    let methods = &class_file.as_ref().unwrap().methods;
+    let methods = &gc.get_class("0").unwrap().methods;
     let (_code_length, code) = if let Some(Attribute::Code {
         code_length, code, ..
     }) = methods[1].get_code_attribute()
