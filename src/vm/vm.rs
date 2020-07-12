@@ -1,7 +1,11 @@
-// use super::super::class::class_file;
+use super::super::class::class_file;
 use super::super::stack::stack;
 
 use std::vec::Vec;
+
+impl class_file::ClassFile {
+    fn new_classfile() {}
+}
 
 pub fn read_ope_code(v: &Vec<u8>) -> Option<u8> {
     let mut stack_machine = stack::StackMachine::new();
@@ -37,8 +41,7 @@ pub fn read_ope_code(v: &Vec<u8>) -> Option<u8> {
             _ => {}
         }
     }
-
-    Some(0)
+    None
 }
 
 #[allow(non_upper_case_globals)]

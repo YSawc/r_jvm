@@ -1,5 +1,6 @@
 use r_jvm::class;
 use r_jvm::class::attribute::Attribute;
+use r_jvm::gc::gc;
 use r_jvm::vm::vm;
 
 fn main() {}
@@ -8,6 +9,7 @@ fn main() {}
 fn just_add_int() {
     let file_path: &str = "java/JustAddInt.class";
     println!("read java/JustAddInt.class ..");
+
     let mut reader = match class::class_parser::ClassFileReader::new(file_path) {
         Some(reader) => reader,
         None => {
@@ -16,9 +18,10 @@ fn just_add_int() {
         }
     };
 
-    let class_file = reader.read();
+    let class_file_ptr = gc::new(reader.read());
+    let class_file = unsafe { &mut *class_file_ptr };
 
-    let methods = class_file.unwrap().methods;
+    let methods = &class_file.as_ref().unwrap().methods;
     let (_code_length, code) = if let Some(Attribute::Code {
         code_length, code, ..
     }) = methods[1].get_code_attribute()
