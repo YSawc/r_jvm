@@ -1,10 +1,27 @@
-use super::super::class::class_file;
+use super::super::class::attribute::Attribute;
+// use super::super::class::class_file;
+use super::super::gc::gc;
 use super::super::stack::stack;
+// use super::super::vm::vm;
 
 use std::vec::Vec;
 
-impl class_file::ClassFile {
-    fn new_classfile() {}
+pub fn run(gc: gc::ClassHeap, class_name: &str, idx: u8) -> Option<()> {
+    let methods = &gc.get_class(class_name).unwrap().methods;
+    println!("test");
+    let (_code_length, code) = if let Some(Attribute::Code {
+        code_length, code, ..
+    }) = methods[idx as usize].get_code_attribute()
+    {
+        (code_length, code)
+    } else {
+        panic!()
+    };
+    // println!("{:?}", _code_length);
+    println!("code : {:?}", code);
+
+    println!("return value : {:?}", read_ope_code(code));
+    Some(())
 }
 
 pub fn read_ope_code(v: &Vec<u8>) -> Option<u8> {
