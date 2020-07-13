@@ -19,8 +19,8 @@ impl ClassHeap {
         self.class_map.get(class_name).and_then(|c| Some(c))
     }
 
-    pub fn insert_class(&mut self, class_file: ClassFile) -> Option<()> {
-        self.class_map.insert("0".to_string(), class_file);
+    pub fn insert_class(&mut self, class_name: &str, class_file: ClassFile) -> Option<()> {
+        self.class_map.insert(class_name.to_string(), class_file);
         Some(())
     }
 }

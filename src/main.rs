@@ -17,8 +17,9 @@ fn just_add_int() {
         }
     };
 
+    let class_name = "JustAddInt";
     let mut gc = gc::ClassHeap::new();
-    gc.insert_class(reader.read().unwrap());
+    gc.insert_class(class_name, reader.read().unwrap());
 
-    vm::run(gc, "0", 1);
+    vm::run(gc, class_name, 1);
 }

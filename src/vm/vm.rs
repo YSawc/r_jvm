@@ -8,7 +8,6 @@ use std::vec::Vec;
 
 pub fn run(gc: gc::ClassHeap, class_name: &str, idx: u8) -> Option<()> {
     let methods = &gc.get_class(class_name).unwrap().methods;
-    println!("test");
     let (_code_length, code) = if let Some(Attribute::Code {
         code_length, code, ..
     }) = methods[idx as usize].get_code_attribute()
