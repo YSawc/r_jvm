@@ -7,17 +7,27 @@ use super::super::stack::stack;
 use std::vec::Vec;
 
 pub fn run(gc: gc::ClassHeap, class_name: &str, idx: u8) -> Option<()> {
-    let methods = &gc.get_class(class_name).unwrap().methods;
-    let (_code_length, code) = if let Some(Attribute::Code {
-        code_length, code, ..
+    let class = &gc.get_class(class_name).unwrap();
+    // println!("{:?}", class.constant_pool);
+    let methods = &class.methods;
+    // println!("{:?}", methods);
+    let (code, attributes) = if let Some(Attribute::Code {
+        code, attributes, ..
     }) = methods[idx as usize].get_code_attribute()
     {
-        (code_length, code)
+        (code, attributes)
     } else {
         panic!()
     };
     // println!("{:?}", _code_length);
     println!("code : {:?}", code);
+
+    // println!( "attributes : {:?}", attributes );
+    // println!( "attributes[0].attribute_name_index: {:?}", attributes[0].attribute_name_index );
+    println!(
+        "attribute_name : {:?}",
+        class.constant_pool[attributes[0].attribute_name_index as usize].get_utf8()?
+    );
 
     println!("return value : {:?}", read_ope_code(code));
     Some(())
