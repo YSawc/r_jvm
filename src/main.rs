@@ -21,5 +21,6 @@ fn just_add_int() {
     let mut gc = gc::ClassHeap::new();
     gc.insert_class(class_name, reader.read().unwrap());
 
-    vm::run(gc, class_name, 1);
+    let mut vm = vm::VM::new();
+    vm.run(gc, class_name);
 }
