@@ -55,12 +55,9 @@ impl VM {
     }
 
     pub fn read_idx_code(&mut self, class: &class_file::ClassFile, idx: u8) -> Option<()> {
-        let code = if let Some(Attribute::Code { code, .. }) =
-            class.methods[idx as usize].get_code_attribute()
-        {
-            code
-        } else {
-            panic!()
+        let code = match class.methods[idx as usize].get_code_attribute() {
+            Some(Attribute::Code { code, .. }) => code,
+            _ => panic!(),
         };
         println!("code : {:?}", code);
         self.read_ope_code(class, code);
@@ -110,15 +107,13 @@ impl VM {
 }
 
 pub fn search_special_methods(class: &class_file::ClassFile) -> Option<u8> {
-    let (attribute_count, attributes) = if let Some(Attribute::Code {
-        attributes_count,
-        attributes,
-        ..
-    }) = class.methods[0 as usize].get_code_attribute()
-    {
-        (attributes_count, attributes)
-    } else {
-        panic!()
+    let (attribute_count, attributes) = match class.methods[0 as usize].get_code_attribute() {
+        Some(Attribute::Code {
+            attributes_count,
+            attributes,
+            ..
+        }) => (attributes_count, attributes),
+        _ => panic!(),
     };
 
     for n in 0..*attribute_count as u8 {
