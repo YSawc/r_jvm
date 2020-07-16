@@ -65,14 +65,14 @@ impl VM {
     }
 
     pub fn read_ope_code(&mut self, class: &class_file::ClassFile, v: &Vec<u8>) -> Option<u8> {
-        for mut n in 0..v.len() {
-            match v[n] {
+        for mut _n in 0..v.len() {
+            match v[_n] {
                 Inst::iconst_m1..=Inst::iconst_5 => {
-                    self.stack_machine.imm.push(v[n] - 3);
+                    self.stack_machine.imm.push(v[_n] - 3);
                 }
                 Inst::bipush => {
-                    n += 1;
-                    self.stack_machine.imm.push(v[n]);
+                    _n += 1;
+                    self.stack_machine.imm.push(v[_n]);
                 }
                 Inst::iload_1 => self.stack_machine.imm.push(self.stack_machine.i_st1 as u8),
                 Inst::iload_2 => self.stack_machine.imm.push(self.stack_machine.i_st2 as u8),
@@ -97,7 +97,7 @@ impl VM {
                     let idx = search_special_methods(class).unwrap();
                     println!("idx : {:?}", idx);
                     self.read_idx_code(class, idx);
-                    n += 2;
+                    _n += 2;
                 }
                 _ => {}
             }
