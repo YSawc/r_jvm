@@ -86,16 +86,21 @@ impl VM {
                 }
                 Inst::ireturn => {
                     let ret_v = self.stack_machine.imm.pop();
-                    println!("stack_matchine : {:?}", self.stack_machine);
+                    println!("{:?}", self.stack_machine);
                     return ret_v;
                 }
                 Inst::_return => {
-                    println!("stack_matchine : {:?}", self.stack_machine);
+                    println!("{:?}", self.stack_machine);
                     return None;
+                }
+                Inst::invoke_virtual => {
+                    let idx = search_invoke_virtual_index(class, (_n + 2) as u8).unwrap();
+                    _n += 2;
+                    self.read_idx_code(class, idx);
                 }
                 Inst::invoke_special => {
                     let idx = search_special_methods(class).unwrap();
-                    println!("idx : {:?}", idx);
+                    println!("search_special_methods idx : {}", idx);
                     self.read_idx_code(class, idx);
                     _n += 2;
                 }
@@ -104,6 +109,30 @@ impl VM {
         }
         None
     }
+}
+
+pub fn search_invoke_virtual_index(class: &class_file::ClassFile, idx: u8) -> Option<u8> {
+    let name_and_type_index = class.constant_pool[idx as usize]
+        .get_method_name_and_type_index()
+        .unwrap();
+    let name_index = class.constant_pool[name_and_type_index as usize]
+        .get_name_and_type_name_index()
+        .unwrap();
+
+    let attribute_count = match class.methods[0 as usize].get_code_attribute() {
+        Some(Attribute::Code {
+            attributes_count, ..
+        }) => attributes_count,
+        _ => panic!(),
+    };
+
+    for n in 0..*attribute_count as u8 {
+        if class.methods[n as usize].name_index == name_index {
+            return Some(n + 1 as u8);
+        }
+    }
+
+    None
 }
 
 pub fn search_special_methods(class: &class_file::ClassFile) -> Option<u8> {
@@ -151,5 +180,6 @@ mod Inst {
     pub const iadd: u8 = 96;
     pub const ireturn: u8 = 172;
     pub const _return: u8 = 177;
+    pub const invoke_virtual: u8 = 182;
     pub const invoke_special: u8 = 183;
 }

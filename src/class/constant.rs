@@ -91,6 +91,23 @@ pub enum Constant {
 }
 
 impl Constant {
+    pub fn get_name_and_type_name_index(&self) -> Option<u16> {
+        match self {
+            Constant::NameAndtypeInfo { name_index, .. } => Some(*name_index),
+            _ => None,
+        }
+    }
+
+    pub fn get_method_name_and_type_index(&self) -> Option<u16> {
+        match self {
+            Constant::MethodInfo {
+                name_and_type_index,
+                ..
+            } => Some(*name_and_type_index),
+            _ => None,
+        }
+    }
+
     pub fn get_utf8(&self) -> Option<&String> {
         match self {
             Constant::Utf8Info { str, .. } => Some(str),
