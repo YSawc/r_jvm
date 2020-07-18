@@ -1,6 +1,6 @@
 # r_jvm
 
-[![CircleCI](https://circleci.com/gh/YSawc/r_jvm.svg?style=shield)](https://circleci.com/gh/ysawc/r_jvm)
+[![CircleCI](https://circleci.com/gh/YSawc/r_jvm.svg?style=shield)](https://circleci.com/gh/YSawc/r_jvm)
 [![](http://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 For learing jvm very thank to [ferrugo](https://github.com/maekawatoshiki/ferrugo).

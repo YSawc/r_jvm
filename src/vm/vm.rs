@@ -66,6 +66,7 @@ impl VM {
 
     pub fn read_ope_code(&mut self, class: &class_file::ClassFile, v: &Vec<u8>) -> Option<u8> {
         for mut _n in 0..v.len() {
+            // println!("{}", v[_n]);
             match v[_n] {
                 Inst::iconst_m1..=Inst::iconst_5 => {
                     self.stack_machine.imm.push(v[_n] - 3);
@@ -86,7 +87,7 @@ impl VM {
                 }
                 Inst::ireturn => {
                     let ret_v = self.stack_machine.imm.pop();
-                    println!("{:?}", self.stack_machine);
+                    // println!("{:?}", self.stack_machine);
                     return ret_v;
                 }
                 Inst::_return => {
@@ -94,15 +95,18 @@ impl VM {
                     return None;
                 }
                 Inst::invoke_virtual => {
-                    let idx = search_invoke_virtual_index(class, (_n + 2) as u8).unwrap();
+                    // println!("{:?}", self.stack_machine);
+                    let idx = search_invoke_virtual_index(class, (v[_n + 1]) as u8).unwrap();
+                    // println!("search_invoke_virtual_index : {}", idx);
                     _n += 2;
                     self.read_idx_code(class, idx);
                 }
                 Inst::invoke_special => {
-                    let idx = search_special_methods(class).unwrap();
-                    println!("search_special_methods idx : {}", idx);
-                    self.read_idx_code(class, idx);
+                    // println!("{:?}", self.stack_machine);
+                    let idx = search_special_methods_index(class).unwrap();
+                    // println!("search_special_methods idx : {}", idx);
                     _n += 2;
+                    self.read_idx_code(class, idx);
                 }
                 _ => {}
             }
@@ -112,44 +116,39 @@ impl VM {
 }
 
 pub fn search_invoke_virtual_index(class: &class_file::ClassFile, idx: u8) -> Option<u8> {
+    // println!("{:?}", class.constant_pool[idx as usize]);
     let name_and_type_index = class.constant_pool[idx as usize]
         .get_method_name_and_type_index()
         .unwrap();
+    // println!("{:?}", class.constant_pool[name_and_type_index as usize]);
     let name_index = class.constant_pool[name_and_type_index as usize]
         .get_name_and_type_name_index()
         .unwrap();
 
-    let attribute_count = match class.methods[0 as usize].get_code_attribute() {
-        Some(Attribute::Code {
-            attributes_count, ..
-        }) => attributes_count,
-        _ => panic!(),
-    };
+    // println!("{:?}", class.methods[0 as usize].get_code_attribute());
+    // println!("{:?}", class.attributes_count);
 
-    for n in 0..*attribute_count as u8 {
+    // println!("{:?}", class.methods);
+    // println!("{:?}", name_index);
+    for n in 0..=class.attributes_count as u8 {
         if class.methods[n as usize].name_index == name_index {
-            return Some(n + 1 as u8);
+            return Some(n as u8);
         }
     }
 
     None
 }
 
-pub fn search_special_methods(class: &class_file::ClassFile) -> Option<u8> {
-    let (attribute_count, attributes) = match class.methods[0 as usize].get_code_attribute() {
-        Some(Attribute::Code {
-            attributes_count,
-            attributes,
-            ..
-        }) => (attributes_count, attributes),
-        _ => panic!(),
-    };
-
-    for n in 0..*attribute_count as u8 {
-        if class.constant_pool[attributes[n as usize].attribute_name_index as usize].get_utf8()?
+pub fn search_special_methods_index(class: &class_file::ClassFile) -> Option<u8> {
+    for n in 0..class.methods_count as u8 {
+        // println!(        // println!(
+        //     "{:?}",
+        //     class.constant_pool[class.methods[n as usize].name_index as usize - 1]
+        // );
+        if class.constant_pool[class.methods[n as usize].name_index as usize - 1].get_utf8()?
             == "main"
         {
-            return Some(n + 1 as u8);
+            return Some(n as u8);
         }
     }
 
