@@ -67,17 +67,17 @@ impl VM {
     pub fn read_ope_code(&mut self, class: &class_file::ClassFile, v: &Vec<u8>) -> Option<u8> {
         // println!("{}", v.len());
 
-        let mut _n = 0;
-        while _n < v.len() {
-            // println!("{}", _n);
-            // println!("{}", v[_n]);
-            match v[_n] {
+        let mut n = 0;
+        while n < v.len() {
+            // println!("{}", n);
+            // println!("{}", v[n]);
+            match v[n] {
                 Inst::iconst_m1..=Inst::iconst_5 => {
-                    self.stack_machine.imm.push(v[_n] - 3);
+                    self.stack_machine.imm.push(v[n] - 3);
                 }
                 Inst::bipush => {
-                    _n += 1;
-                    self.stack_machine.imm.push(v[_n]);
+                    n += 1;
+                    self.stack_machine.imm.push(v[n]);
                 }
                 Inst::iload_0 => self.stack_machine.imm.push(self.stack_machine.i_st0 as u8),
                 Inst::iload_1 => self.stack_machine.imm.push(self.stack_machine.i_st1 as u8),
@@ -102,17 +102,17 @@ impl VM {
                 }
                 Inst::invoke_special => {
                     let idx = search_special_methods_index(class).unwrap();
-                    _n += 2;
+                    n += 2;
                     self.read_idx_code(class, idx);
                 }
                 Inst::invoke_static => {
-                    let idx = search_invoke_static_index(class, (v[_n + 1]) as u8).unwrap();
-                    _n += 2;
+                    let idx = search_invoke_static_index(class, (v[n + 1]) as u8).unwrap();
+                    n += 2;
                     self.read_idx_code(class, idx);
                 }
                 _ => unimplemented!(),
             }
-            _n += 1;
+            n += 1;
         }
         None
     }
