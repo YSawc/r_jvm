@@ -24,3 +24,24 @@ fn just_add_int() {
     let mut vm = vm::VM::new();
     vm.run(gc, class_name);
 }
+
+#[test]
+fn call_add() {
+    let file_path: &str = "java/CallAdd.class";
+    println!("read java/CallAdd.class ..");
+
+    let mut reader = match class::class_parser::ClassFileReader::new(file_path) {
+        Some(reader) => reader,
+        None => {
+            eprintln!("{}: file not found.", file_path);
+            return;
+        }
+    };
+
+    let class_name = "JustAddInt";
+    let mut gc = gc::ClassHeap::new();
+    gc.insert_class(class_name, reader.read().unwrap());
+
+    let mut vm = vm::VM::new();
+    vm.run(gc, class_name);
+}

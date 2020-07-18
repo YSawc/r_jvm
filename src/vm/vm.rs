@@ -65,7 +65,11 @@ impl VM {
     }
 
     pub fn read_ope_code(&mut self, class: &class_file::ClassFile, v: &Vec<u8>) -> Option<u8> {
-        for mut _n in 0..v.len() {
+        // println!("{}", v.len());
+
+        let mut _n = 0;
+        while _n < v.len() {
+            // println!("{}", _n);
             // println!("{}", v[_n]);
             match v[_n] {
                 Inst::iconst_m1..=Inst::iconst_5 => {
@@ -75,9 +79,11 @@ impl VM {
                     _n += 1;
                     self.stack_machine.imm.push(v[_n]);
                 }
+                Inst::iload_0 => self.stack_machine.imm.push(self.stack_machine.i_st0 as u8),
                 Inst::iload_1 => self.stack_machine.imm.push(self.stack_machine.i_st1 as u8),
                 Inst::iload_2 => self.stack_machine.imm.push(self.stack_machine.i_st2 as u8),
                 Inst::iload_3 => self.stack_machine.imm.push(self.stack_machine.i_st3 as u8),
+                Inst::aload_0 => {}
                 Inst::istore_1 => self.stack_machine.i_st1 = self.stack_machine.imm.pop()? as i8,
                 Inst::istore_2 => self.stack_machine.i_st2 = self.stack_machine.imm.pop()? as i8,
                 Inst::istore_3 => self.stack_machine.i_st3 = self.stack_machine.imm.pop()? as i8,
@@ -87,35 +93,32 @@ impl VM {
                 }
                 Inst::ireturn => {
                     let ret_v = self.stack_machine.imm.pop();
-                    // println!("{:?}", self.stack_machine);
+                    println!("{:?}", self.stack_machine);
                     return ret_v;
                 }
                 Inst::_return => {
                     println!("{:?}", self.stack_machine);
                     return None;
                 }
-                Inst::invoke_virtual => {
-                    // println!("{:?}", self.stack_machine);
-                    let idx = search_invoke_virtual_index(class, (v[_n + 1]) as u8).unwrap();
-                    // println!("search_invoke_virtual_index : {}", idx);
-                    _n += 2;
-                    self.read_idx_code(class, idx);
-                }
                 Inst::invoke_special => {
-                    // println!("{:?}", self.stack_machine);
                     let idx = search_special_methods_index(class).unwrap();
-                    // println!("search_special_methods idx : {}", idx);
                     _n += 2;
                     self.read_idx_code(class, idx);
                 }
-                _ => {}
+                Inst::invoke_static => {
+                    let idx = search_invoke_static_index(class, (v[_n + 1]) as u8).unwrap();
+                    _n += 2;
+                    self.read_idx_code(class, idx);
+                }
+                _ => unimplemented!(),
             }
+            _n += 1;
         }
         None
     }
 }
 
-pub fn search_invoke_virtual_index(class: &class_file::ClassFile, idx: u8) -> Option<u8> {
+pub fn search_invoke_static_index(class: &class_file::ClassFile, idx: u8) -> Option<u8> {
     // println!("{:?}", class.constant_pool[idx as usize]);
     let name_and_type_index = class.constant_pool[idx as usize]
         .get_method_name_and_type_index()
@@ -172,6 +175,7 @@ mod Inst {
     pub const iload_1: u8 = 27;
     pub const iload_2: u8 = 28;
     pub const iload_3: u8 = 29;
+    pub const aload_0: u8 = 42;
     pub const istore_0: u8 = 59;
     pub const istore_1: u8 = 60;
     pub const istore_2: u8 = 61;
@@ -181,4 +185,5 @@ mod Inst {
     pub const _return: u8 = 177;
     pub const invoke_virtual: u8 = 182;
     pub const invoke_special: u8 = 183;
+    pub const invoke_static: u8 = 184;
 }
