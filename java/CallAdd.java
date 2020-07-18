@@ -1,7 +1,8 @@
 class CallAdd {
-  static void add() {
+  static int add(int a, int b) {
+    return a + b;
   }
   public static void main(String[] args) {
-    add();
+    add(1, 2);
   }
 }

@@ -64,16 +64,16 @@ impl VM {
         Some(())
     }
 
-    pub fn read_ope_code(&mut self, class: &class_file::ClassFile, v: &Vec<u8>) -> Option<u8> {
+    pub fn read_ope_code(&mut self, class: &class_file::ClassFile, v: &Vec<u8>) -> Option<()> {
         // println!("{}", v.len());
 
         let mut n = 0;
         while n < v.len() {
-            // println!("{}", n);
-            // println!("{}", v[n]);
+            println!("n : {}, v[n] : {}", n, v[n]);
             match v[n] {
                 Inst::iconst_m1..=Inst::iconst_5 => {
                     self.stack_machine.imm.push(v[n] - 3);
+                    println!("self.stack_machine.imm : {:?}", self.stack_machine.imm);
                 }
                 Inst::bipush => {
                     n += 1;
@@ -87,18 +87,22 @@ impl VM {
                 Inst::istore_1 => self.stack_machine.i_st1 = self.stack_machine.imm.pop()? as i8,
                 Inst::istore_2 => self.stack_machine.i_st2 = self.stack_machine.imm.pop()? as i8,
                 Inst::istore_3 => self.stack_machine.i_st3 = self.stack_machine.imm.pop()? as i8,
+                Inst::pop => self.stack_machine.imm.push(self.stack_machine.op.pop()?),
                 Inst::iadd => {
-                    let tmp = self.stack_machine.imm.pop()? + self.stack_machine.imm.pop()?;
-                    self.stack_machine.imm.push(tmp);
+                    let ri = self.stack_machine.imm.pop()?;
+                    let li = self.stack_machine.imm.pop()?;
+                    let res = ri + li;
+                    self.stack_machine.imm.push(res);
                 }
                 Inst::ireturn => {
-                    let ret_v = self.stack_machine.imm.pop();
+                    let ret_i = self.stack_machine.imm.pop().unwrap();
+                    self.stack_machine.op.push(ret_i);
                     println!("{:?}", self.stack_machine);
-                    return ret_v;
+                    return Some(());
                 }
                 Inst::_return => {
                     println!("{:?}", self.stack_machine);
-                    return None;
+                    return Some(());
                 }
                 Inst::invoke_special => {
                     let idx = search_special_methods_index(class).unwrap();
@@ -107,8 +111,10 @@ impl VM {
                 }
                 Inst::invoke_static => {
                     let idx = search_invoke_static_index(class, (v[n + 1]) as u8).unwrap();
+
+                    self.parse_args_and_return_value(class, v[n + 1]);
                     n += 2;
-                    self.read_idx_code(class, idx);
+                    self.read_idx_code(class, idx).unwrap();
                 }
                 _ => unimplemented!(),
             }
@@ -116,25 +122,55 @@ impl VM {
         }
         None
     }
+
+    pub fn parse_args_and_return_value(
+        &mut self,
+        class: &class_file::ClassFile,
+        idx: u8,
+    ) -> Option<()> {
+        let method_name_and_type_index = class.constant_pool[idx as usize]
+            .get_method_name_and_type_index()
+            .unwrap();
+        let descriptor_index = class.constant_pool[method_name_and_type_index as usize]
+            .get_name_and_type_name_index()
+            .unwrap();
+        let type_info = class.constant_pool[descriptor_index as usize]
+            .get_utf8()
+            .unwrap();
+        println!("{:?}", type_info);
+        self.parse_args(type_info);
+        Some(())
+    }
+
+    pub fn parse_args(&mut self, str: &String) -> Option<()> {
+        for n in 0..str.len() {
+            match str.as_bytes()[n] as char {
+                '(' => {}
+                'I' => self.push_to_i_st(n as u8 - 1).unwrap(),
+                ')' => return Some(()),
+                _ => unimplemented!(),
+            }
+        }
+        Some(())
+    }
+
+    pub fn push_to_i_st(&mut self, idx: u8) -> Option<()> {
+        match idx {
+            0 => self.stack_machine.i_st0 = self.stack_machine.imm.pop()? as i8,
+            1 => self.stack_machine.i_st1 = self.stack_machine.imm.pop()? as i8,
+            2 => self.stack_machine.i_st2 = self.stack_machine.imm.pop()? as i8,
+            3 => self.stack_machine.i_st3 = self.stack_machine.imm.pop()? as i8,
+            _ => unimplemented!(),
+        }
+        Some(())
+    }
 }
 
-pub fn search_invoke_static_index(class: &class_file::ClassFile, idx: u8) -> Option<u8> {
-    // println!("{:?}", class.constant_pool[idx as usize]);
-    let name_and_type_index = class.constant_pool[idx as usize]
-        .get_method_name_and_type_index()
-        .unwrap();
-    // println!("{:?}", class.constant_pool[name_and_type_index as usize]);
-    let name_index = class.constant_pool[name_and_type_index as usize]
-        .get_name_and_type_name_index()
-        .unwrap();
-
-    // println!("{:?}", class.methods[0 as usize].get_code_attribute());
-    // println!("{:?}", class.attributes_count);
-
-    // println!("{:?}", class.methods);
-    // println!("{:?}", name_index);
-    for n in 0..=class.attributes_count as u8 {
-        if class.methods[n as usize].name_index == name_index {
+pub fn search_special_methods_index(class: &class_file::ClassFile) -> Option<u8> {
+    for n in 0..class.methods_count as u8 {
+        if class.constant_pool[class.methods[n as usize].name_index as usize - 1].get_utf8()?
+            == "main"
+        {
             return Some(n as u8);
         }
     }
@@ -142,15 +178,16 @@ pub fn search_invoke_static_index(class: &class_file::ClassFile, idx: u8) -> Opt
     None
 }
 
-pub fn search_special_methods_index(class: &class_file::ClassFile) -> Option<u8> {
-    for n in 0..class.methods_count as u8 {
-        // println!(        // println!(
-        //     "{:?}",
-        //     class.constant_pool[class.methods[n as usize].name_index as usize - 1]
-        // );
-        if class.constant_pool[class.methods[n as usize].name_index as usize - 1].get_utf8()?
-            == "main"
-        {
+pub fn search_invoke_static_index(class: &class_file::ClassFile, idx: u8) -> Option<u8> {
+    let name_and_type_index = class.constant_pool[idx as usize]
+        .get_method_name_and_type_index()
+        .unwrap();
+    let name_index = class.constant_pool[name_and_type_index as usize]
+        .get_name_and_type_name_index()
+        .unwrap();
+
+    for n in 0..=class.attributes_count as u8 {
+        if class.methods[n as usize].name_index == name_index {
             return Some(n as u8);
         }
     }
@@ -180,6 +217,7 @@ mod Inst {
     pub const istore_1: u8 = 60;
     pub const istore_2: u8 = 61;
     pub const istore_3: u8 = 62;
+    pub const pop: u8 = 87;
     pub const iadd: u8 = 96;
     pub const ireturn: u8 = 172;
     pub const _return: u8 = 177;

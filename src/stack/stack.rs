@@ -9,6 +9,7 @@ pub struct StackMachine {
     pub f_st2: f32,
     pub f_st3: f32,
     pub imm: Vec<u8>,
+    pub op: Vec<u8>,
 }
 
 impl StackMachine {
@@ -23,6 +24,7 @@ impl StackMachine {
             f_st1: 0f32,
             f_st3: 0f32,
             imm: vec![],
+            op: vec![],
         }
     }
 }
