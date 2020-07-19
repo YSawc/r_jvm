@@ -1,5 +1,7 @@
 use r_jvm::vm::vm;
-fn main() {}
+fn main() {
+    println!("{}", 0xff >> 8);
+}
 
 #[test]
 fn just_add_int() {

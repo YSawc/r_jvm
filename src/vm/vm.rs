@@ -88,7 +88,7 @@ impl VM {
                 }
                 Inst::iinc => {
                     self.increment_i(v[n + 1], v[n + 2]);
-                    println!("self.stack_machine : {:?}", self.stack_machine);
+                    println!("self.stack_machine aster iinc : {:?}", self.stack_machine);
                     n += 2;
                 }
                 Inst::ifge => {
@@ -99,15 +99,14 @@ impl VM {
                     n += 2;
                 }
                 Inst::if_cmpge => {
+                    self.stack_machine.imp_i = check_loop_base(n as u8, v).unwrap();
                     if self.stack_machine.imm.pop() <= self.stack_machine.imm.pop() {
-                        let skip_count = index_to_next_to_goto(n as u8, v).unwrap();
-                        n += skip_count as usize;
-                        n += 2;
+                        n = v[n + v[n as usize + 2] as usize] as usize;
                     } else {
-                        n = v[n as usize + 2] as usize;
+                        n += 2;
                     }
                 }
-                Inst::goto => n -= 7,
+                Inst::goto => n = self.stack_machine.imp_i as usize - 1,
                 Inst::ireturn => {
                     let ret_i = self.stack_machine.imm.pop().unwrap();
                     self.stack_machine.op.push(ret_i);
@@ -233,6 +232,15 @@ pub fn index_to_next_to_goto(c_idx: u8, v: &Vec<u8>) -> Option<u8> {
         }
     }
     return Some(i - c_idx);
+}
+
+pub fn check_loop_base(idx: u8, v: &Vec<u8>) -> Option<u8> {
+    for i in 0..(v.len() as u8 - idx) {
+        if v[idx as usize - i as usize] == 27 {
+            return Some(idx - i);
+        }
+    }
+    None
 }
 
 #[allow(non_upper_case_globals)]
