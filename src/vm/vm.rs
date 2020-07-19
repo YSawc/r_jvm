@@ -32,6 +32,7 @@ impl VM {
         println!("========================================");
         println!("reading .. {}.", file_path);
         println!("========================================");
+
         let mut reader = match class_parser::ClassFileReader::new(&file_path) {
             Some(reader) => reader,
             _ => {
@@ -42,7 +43,6 @@ impl VM {
 
         self.gc.insert_class(class_name, reader.read().unwrap());
         self.topic_class = self.gc.get_class(class_name).unwrap().clone();
-
         self.read_idx_code(0);
         self.drop_stack_machine();
         Some(());
@@ -86,6 +86,16 @@ impl VM {
                     let res = ri + li;
                     self.stack_machine.imm.push(res);
                 }
+                Inst::iinc => self.stack_machine.i_st1 += 1,
+                Inst::ifge => {
+                    if self.stack_machine.imm.pop()? >= 0 {
+                        let skip_count = index_to_next_to_goto(n as u8, v).unwrap();
+                        n += skip_count as usize;
+                        println!("v[n] .. {:?}", v[n]);
+                    }
+                    n += 2;
+                }
+                Inst::goto => {}
                 Inst::ireturn => {
                     let ret_i = self.stack_machine.imm.pop().unwrap();
                     self.stack_machine.op.push(ret_i);
@@ -127,6 +137,7 @@ impl VM {
             .get_utf8()
             .unwrap();
         println!("type_info : {}", type_info);
+
         self.parse_args(type_info);
         Some(())
     }
@@ -189,6 +200,18 @@ impl VM {
     }
 }
 
+pub fn index_to_next_to_goto(c_idx: u8, v: &Vec<u8>) -> Option<u8> {
+    let mut i = c_idx + 1;
+    let segf_c = 128;
+    while v[i as usize] != 167 {
+        i += 1;
+        if i >= segf_c {
+            panic!();
+        }
+    }
+    return Some(i - c_idx);
+}
+
 #[allow(non_upper_case_globals)]
 #[allow(non_snake_case)]
 #[allow(dead_code)]
@@ -213,6 +236,9 @@ mod Inst {
     pub const istore_3: u8 = 62;
     pub const pop: u8 = 87;
     pub const iadd: u8 = 96;
+    pub const iinc: u8 = 132;
+    pub const ifge: u8 = 156;
+    pub const goto: u8 = 167;
     pub const ireturn: u8 = 172;
     pub const _return: u8 = 177;
     pub const invoke_virtual: u8 = 182;
