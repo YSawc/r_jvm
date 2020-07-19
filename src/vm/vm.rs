@@ -86,16 +86,28 @@ impl VM {
                     let res = ri + li;
                     self.stack_machine.imm.push(res);
                 }
-                Inst::iinc => self.stack_machine.i_st1 += 1,
+                Inst::iinc => {
+                    self.increment_i(v[n + 1], v[n + 2]);
+                    println!("self.stack_machine : {:?}", self.stack_machine);
+                    n += 2;
+                }
                 Inst::ifge => {
                     if self.stack_machine.imm.pop()? >= 0 {
                         let skip_count = index_to_next_to_goto(n as u8, v).unwrap();
                         n += skip_count as usize;
-                        println!("v[n] .. {:?}", v[n]);
                     }
                     n += 2;
                 }
-                Inst::goto => {}
+                Inst::if_cmpge => {
+                    if self.stack_machine.imm.pop() <= self.stack_machine.imm.pop() {
+                        let skip_count = index_to_next_to_goto(n as u8, v).unwrap();
+                        n += skip_count as usize;
+                        n += 2;
+                    } else {
+                        n = v[n as usize + 2] as usize;
+                    }
+                }
+                Inst::goto => n -= 7,
                 Inst::ireturn => {
                     let ret_i = self.stack_machine.imm.pop().unwrap();
                     self.stack_machine.op.push(ret_i);
@@ -198,6 +210,17 @@ impl VM {
     pub fn drop_stack_machine(&mut self) -> () {
         self.stack_machine = stack::StackMachine::new();
     }
+
+    pub fn increment_i(&mut self, idx: u8, c: u8) -> Option<()> {
+        match idx {
+            0 => self.stack_machine.i_st0 += c as i8,
+            1 => self.stack_machine.i_st1 += c as i8,
+            2 => self.stack_machine.i_st2 += c as i8,
+            3 => self.stack_machine.i_st3 += c as i8,
+            _ => unimplemented!(),
+        }
+        Some(())
+    }
 }
 
 pub fn index_to_next_to_goto(c_idx: u8, v: &Vec<u8>) -> Option<u8> {
@@ -238,6 +261,7 @@ mod Inst {
     pub const iadd: u8 = 96;
     pub const iinc: u8 = 132;
     pub const ifge: u8 = 156;
+    pub const if_cmpge: u8 = 162;
     pub const goto: u8 = 167;
     pub const ireturn: u8 = 172;
     pub const _return: u8 = 177;

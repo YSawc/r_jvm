@@ -10,6 +10,6 @@ class Fibonacci {
 
   public static void main(String[] args) {
     // fibonacci(9);
-    for (int i = 0; i < 0; i++) {};
+    for (int i = 0; i < 2; i++) {};
   }
 }
