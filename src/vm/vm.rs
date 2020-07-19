@@ -236,8 +236,9 @@ pub fn index_to_next_to_goto(c_idx: u8, v: &Vec<u8>) -> Option<u8> {
 
 pub fn check_loop_base(idx: u8, v: &Vec<u8>) -> Option<u8> {
     for i in 0..(v.len() as u8 - idx) {
-        if v[idx as usize - i as usize] == 27 {
-            return Some(idx - i);
+        match v[idx as usize - i as usize] {
+            27 | 28 | 29 => return Some(idx - i),
+            _ => {}
         }
     }
     None
