@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 pub type GcType<T> = *mut T;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ClassHeap {
     pub class_map: HashMap<String, ClassFile>,
 }

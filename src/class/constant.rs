@@ -35,7 +35,7 @@ pub fn index_to_constant_type(val: u8) -> Option<ConstantType> {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Constant {
     ClassInfo {
         class_index: u16,

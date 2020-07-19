@@ -1,5 +1,5 @@
 use super::super::class::attribute::Attribute;
-use super::super::class::class_file;
+use super::super::class::{class_file, class_parser};
 use super::super::gc::gc;
 use super::super::stack::stack;
 
@@ -7,64 +7,56 @@ use std::vec::Vec;
 
 pub struct VM {
     stack_machine: stack::StackMachine,
+    gc: gc::ClassHeap,
+    topic_class: class_file::ClassFile,
 }
 
 impl VM {
     pub fn new() -> Self {
         VM {
             stack_machine: stack::StackMachine::new(),
+            gc: gc::ClassHeap::new(),
+            topic_class: class_file::ClassFile::new(),
         }
     }
 }
 
 impl VM {
-    pub fn run(&mut self, gc: gc::ClassHeap, class_name: &str) -> Option<()> {
-        let class = &gc.get_class(class_name).unwrap();
+    pub fn run(&mut self, class_name: &str) -> () {
+        // self.topic_class = *self.gc.get_class(class_name).unwrap();
+        let file_path = vec![
+            "java/".to_string(),
+            class_name.to_string(),
+            ".class".to_string(),
+        ]
+        .join("");
+        let mut reader = match class_parser::ClassFileReader::new(&file_path) {
+            Some(reader) => reader,
+            _ => {
+                eprintln!("{}: file not found.", file_path);
+                panic!();
+            }
+        };
 
-        // println!("{:?}", class);
-        // println!("{:?}", class.constant_pool);
-        // let methods = &class.methods;
-        // println!("methods : {:?}", methods);
-        // println!("descriptor_index : {:?}", methods[0].descriptor_index);
+        self.gc.insert_class(class_name, reader.read().unwrap());
+        self.topic_class = self.gc.get_class(class_name).unwrap().clone();
 
-        // let (code, attributes) = if let Some(Attribute::Code {
-        //     code, attributes, ..
-        // // }) = methods[idx as usize].get_code_attribute()
-        // }) = methods[0 as usize].get_code_attribute()
-        // {
-        //     (code, attributes)
-        // } else {
-        //     panic!()
-        // };
-        // println!("{:?}", _code_length);
-        // println!("code : {:?}", code);
-        // println!("attributes : {:?}", attributes);
-
-        // println!( "attributes[0].attribute_name_index: {:?}", attributes[0].attribute_name_index );
-        // println!(
-        //     "Method: {:?}:{:?}",
-        //     class.constant_pool[attributes[0].attribute_name_index as usize].get_utf8()?,
-        //     class.constant_pool[methods[0].descriptor_index as usize - 1].get_utf8()?
-        // );
-
-        // println!("return value : {:?}", read_ope_code(code));
-        // println!("return value : {:?}", self.read_idx_code(class, 0))
-
-        self.read_idx_code(class, 0);
-        Some(())
+        self.read_idx_code(0);
+        self.drop_stack_machine();
+        Some(());
     }
 
-    pub fn read_idx_code(&mut self, class: &class_file::ClassFile, idx: u8) -> Option<()> {
-        let code = match class.methods[idx as usize].get_code_attribute() {
-            Some(Attribute::Code { code, .. }) => code,
+    pub fn read_idx_code(&mut self, idx: u8) -> Option<()> {
+        let code = match self.topic_class.methods[idx as usize].get_code_attribute() {
+            Some(Attribute::Code { code, .. }) => code.clone(),
             _ => panic!(),
         };
         println!("code : {:?}", code);
-        self.read_ope_code(class, code);
+        self.read_ope_code(&code);
         Some(())
     }
 
-    pub fn read_ope_code(&mut self, class: &class_file::ClassFile, v: &Vec<u8>) -> Option<()> {
+    pub fn read_ope_code(&mut self, v: &Vec<u8>) -> Option<()> {
         // println!("{}", v.len());
 
         let mut n = 0;
@@ -105,16 +97,16 @@ impl VM {
                     return Some(());
                 }
                 Inst::invoke_special => {
-                    let idx = search_special_methods_index(class).unwrap();
+                    let idx = self.search_special_methods_index().unwrap();
                     n += 2;
-                    self.read_idx_code(class, idx);
+                    self.read_idx_code(idx);
                 }
                 Inst::invoke_static => {
-                    let idx = search_invoke_static_index(class, (v[n + 1]) as u8).unwrap();
+                    let idx = self.search_invoke_static_index((v[n + 1]) as u8).unwrap();
 
-                    self.parse_args_and_return_value(class, v[n + 1]);
+                    self.parse_args_and_return_value(v[n + 1]);
                     n += 2;
-                    self.read_idx_code(class, idx).unwrap();
+                    self.read_idx_code(idx).unwrap();
                 }
                 _ => unimplemented!(),
             }
@@ -123,18 +115,15 @@ impl VM {
         None
     }
 
-    pub fn parse_args_and_return_value(
-        &mut self,
-        class: &class_file::ClassFile,
-        idx: u8,
-    ) -> Option<()> {
-        let method_name_and_type_index = class.constant_pool[idx as usize]
+    pub fn parse_args_and_return_value(&mut self, idx: u8) -> Option<()> {
+        let topic_class = self.topic_class.clone();
+        let method_name_and_type_index = topic_class.constant_pool[idx as usize]
             .get_method_name_and_type_index()
             .unwrap();
-        let descriptor_index = class.constant_pool[method_name_and_type_index as usize]
+        let descriptor_index = topic_class.constant_pool[method_name_and_type_index as usize]
             .get_name_and_type_name_index()
             .unwrap();
-        let type_info = class.constant_pool[descriptor_index as usize]
+        let type_info = topic_class.constant_pool[descriptor_index as usize]
             .get_utf8()
             .unwrap();
         println!("{:?}", type_info);
@@ -164,35 +153,40 @@ impl VM {
         }
         Some(())
     }
-}
-
-pub fn search_special_methods_index(class: &class_file::ClassFile) -> Option<u8> {
-    for n in 0..class.methods_count as u8 {
-        if class.constant_pool[class.methods[n as usize].name_index as usize - 1].get_utf8()?
-            == "main"
-        {
-            return Some(n as u8);
+    pub fn search_special_methods_index(&mut self) -> Option<u8> {
+        for n in 0..self.topic_class.methods_count as u8 {
+            if self.topic_class.constant_pool
+                [self.topic_class.methods[n as usize].name_index as usize - 1]
+                .get_utf8()?
+                == "main"
+            {
+                return Some(n as u8);
+            }
         }
+
+        None
     }
 
-    None
-}
+    pub fn search_invoke_static_index(&mut self, idx: u8) -> Option<u8> {
+        let name_and_type_index = self.topic_class.constant_pool[idx as usize]
+            .get_method_name_and_type_index()
+            .unwrap();
+        let name_index = self.topic_class.constant_pool[name_and_type_index as usize]
+            .get_name_and_type_name_index()
+            .unwrap();
 
-pub fn search_invoke_static_index(class: &class_file::ClassFile, idx: u8) -> Option<u8> {
-    let name_and_type_index = class.constant_pool[idx as usize]
-        .get_method_name_and_type_index()
-        .unwrap();
-    let name_index = class.constant_pool[name_and_type_index as usize]
-        .get_name_and_type_name_index()
-        .unwrap();
-
-    for n in 0..=class.attributes_count as u8 {
-        if class.methods[n as usize].name_index == name_index {
-            return Some(n as u8);
+        for n in 0..=self.topic_class.attributes_count as u8 {
+            if self.topic_class.methods[n as usize].name_index == name_index {
+                return Some(n as u8);
+            }
         }
+
+        None
     }
 
-    None
+    pub fn drop_stack_machine(&mut self) -> () {
+        self.stack_machine = stack::StackMachine::new();
+    }
 }
 
 #[allow(non_upper_case_globals)]

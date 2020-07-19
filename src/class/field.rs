@@ -1,6 +1,6 @@
 use super::attribute::AttributeInfo;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct FieldInfo {
     pub access_flags: u16,
     pub name_index: u16,

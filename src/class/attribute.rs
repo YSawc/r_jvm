@@ -1,11 +1,11 @@
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AttributeInfo {
     pub attribute_name_index: u16,
     pub attribute_length: u32,
     pub info: Attribute,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Attribute {
     ConstantValue {
         constant_value: u16,
@@ -34,7 +34,7 @@ pub enum Attribute {
     None,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Exception {
     pub start_pc: u16,
     pub end_pc: u16,
@@ -42,7 +42,7 @@ pub struct Exception {
     pub catch_type: u16,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LineNumber {
     pub start_pc: u16,
     pub line_number: u16,

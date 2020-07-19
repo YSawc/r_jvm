@@ -2,7 +2,7 @@ use super::constant::Constant;
 use super::field::FieldInfo;
 use super::method::MethodInfo;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ClassFile {
     pub magic: u32,
     pub minor_version: u16,

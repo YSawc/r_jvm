@@ -1,6 +1,6 @@
 use super::attribute::{Attribute, AttributeInfo};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct MethodInfo {
     pub access_flags: u16,
     pub name_index: u16,
