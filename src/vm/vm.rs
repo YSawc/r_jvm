@@ -23,13 +23,15 @@ impl VM {
 
 impl VM {
     pub fn run(&mut self, class_name: &str) -> () {
-        // self.topic_class = *self.gc.get_class(class_name).unwrap();
         let file_path = vec![
             "java/".to_string(),
             class_name.to_string(),
             ".class".to_string(),
         ]
         .join("");
+        println!("========================================");
+        println!("reading .. {}.", file_path);
+        println!("========================================");
         let mut reader = match class_parser::ClassFileReader::new(&file_path) {
             Some(reader) => reader,
             _ => {
@@ -57,8 +59,6 @@ impl VM {
     }
 
     pub fn read_ope_code(&mut self, v: &Vec<u8>) -> Option<()> {
-        // println!("{}", v.len());
-
         let mut n = 0;
         while n < v.len() {
             println!("n : {}, v[n] : {}", n, v[n]);
@@ -126,7 +126,7 @@ impl VM {
         let type_info = topic_class.constant_pool[descriptor_index as usize]
             .get_utf8()
             .unwrap();
-        println!("{:?}", type_info);
+        println!("type_info : {}", type_info);
         self.parse_args(type_info);
         Some(())
     }
