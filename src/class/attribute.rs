@@ -22,6 +22,11 @@ pub enum Attribute {
         attributes: Vec<AttributeInfo>,
     },
 
+    StackMapTable {
+        number_of_entries: u16,
+        entries: Vec<StackMapFrame>,
+    },
+
     Exceptions {
         number_of_exceptions: u16,
         exception_index_table: Vec<u16>,
@@ -31,7 +36,6 @@ pub enum Attribute {
         line_number_table_length: u16,
         line_number_table: Vec<LineNumber>,
     },
-    None,
 }
 
 #[derive(Debug, Clone)]
@@ -46,4 +50,48 @@ pub struct Exception {
 pub struct LineNumber {
     pub start_pc: u16,
     pub line_number: u16,
+}
+
+#[derive(Debug, Clone)]
+pub struct StackMapFrame {
+    pub frame_type: u8,
+    pub body: StackMapFrameBody,
+}
+
+#[derive(Debug, Clone)]
+pub enum StackMapFrameBody {
+    SameFrame,
+    SameLocals1StackItemFrame {
+        stack: VerificationTypeInfo,
+    },
+    AppendFrame {
+        offset_delta: u16,
+        locals: Vec<VerificationTypeInfo>,
+    },
+    ChopFrame {
+        offset_delta: u16,
+    },
+    SameFrameExtended {
+        offset_delta: u16,
+    },
+    FullFrame {
+        offset_delta: u16,
+        number_of_locals: u16,
+        locals: Vec<VerificationTypeInfo>,
+        number_of_stack_items: u16,
+        stack: Vec<VerificationTypeInfo>,
+    },
+}
+
+#[derive(Debug, Clone)]
+pub enum VerificationTypeInfo {
+    Top,
+    Integer,
+    Float,
+    Long,
+    Double,
+    Null,
+    UninitializedThis,
+    Object { cpool_index: u16 },
+    Uninitialized,
 }

@@ -129,7 +129,7 @@ impl VM {
                     n += 2;
                     self.read_idx_code(idx).unwrap();
                 }
-                _ => unimplemented!(),
+                e => unimplemented!("{}", e),
             }
             n += 1;
         }
@@ -159,7 +159,7 @@ impl VM {
                 '(' => {}
                 'I' => self.push_to_i_st(n as u8 - 1).unwrap(),
                 ')' => return Some(()),
-                _ => unimplemented!(),
+                e => unimplemented!("{}", e),
             }
         }
         Some(())
@@ -171,7 +171,7 @@ impl VM {
             1 => self.stack_machine.i_st1 = self.stack_machine.imm.pop()? as i8,
             2 => self.stack_machine.i_st2 = self.stack_machine.imm.pop()? as i8,
             3 => self.stack_machine.i_st3 = self.stack_machine.imm.pop()? as i8,
-            _ => unimplemented!(),
+            e => unimplemented!("{}", e),
         }
         Some(())
     }
@@ -216,13 +216,13 @@ impl VM {
             1 => self.stack_machine.i_st1 += c as i8,
             2 => self.stack_machine.i_st2 += c as i8,
             3 => self.stack_machine.i_st3 += c as i8,
-            _ => unimplemented!(),
+            e => unimplemented!("{}", e),
         }
         Some(())
     }
 }
 
-pub fn index_to_next_to_goto(c_idx: u8, v: &Vec<u8>) -> Option<u8> {
+fn index_to_next_to_goto(c_idx: u8, v: &Vec<u8>) -> Option<u8> {
     let mut i = c_idx + 1;
     let segf_c = 128;
     while v[i as usize] != 167 {
@@ -234,7 +234,7 @@ pub fn index_to_next_to_goto(c_idx: u8, v: &Vec<u8>) -> Option<u8> {
     return Some(i - c_idx);
 }
 
-pub fn check_loop_base(idx: u8, v: &Vec<u8>) -> Option<u8> {
+fn check_loop_base(idx: u8, v: &Vec<u8>) -> Option<u8> {
     for i in 0..(v.len() as u8 - idx) {
         match v[idx as usize - i as usize] {
             27 | 28 | 29 => return Some(idx - i),

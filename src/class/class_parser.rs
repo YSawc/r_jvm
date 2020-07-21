@@ -1,4 +1,7 @@
-use super::attribute::{Attribute, AttributeInfo, Exception, LineNumber};
+use super::attribute::{
+    Attribute, AttributeInfo, Exception, LineNumber, StackMapFrame, StackMapFrameBody,
+    VerificationTypeInfo,
+};
 use super::class_file::ClassFile;
 use super::constant::{index_to_constant_type, Constant, ConstantType};
 use super::field::FieldInfo;
@@ -195,9 +198,10 @@ impl ClassFileReader {
         let info = match name.as_str() {
             "ConstantValue" => self.read_constant_value_attribute()?,
             "Code" => self.read_code_attribute(constant_pool)?,
+            "StackMapTable" => self.read_stack_map_table_attribute()?,
             "ExceptionsAttribute" => self.read_exceptions_attribute()?,
             "LineNumberTable" => self.read_line_number_table_attribute()?,
-            _ => Attribute::None,
+            e => unimplemented!("{}", e),
         };
 
         Some(AttributeInfo {
@@ -240,6 +244,62 @@ impl ClassFileReader {
             attributes_count,
             attributes,
         })
+    }
+
+    fn read_stack_map_table_attribute(&mut self) -> Option<Attribute> {
+        let number_of_entries = self.read_u16().unwrap();
+        let mut entries = vec![];
+        for _ in 0..number_of_entries {
+            entries.push(self.read_stack_map_frame().unwrap())
+        }
+
+        Some(Attribute::StackMapTable {
+            number_of_entries,
+            entries,
+        })
+    }
+
+    fn read_stack_map_frame(&mut self) -> Option<StackMapFrame> {
+        let frame_type = self.read_u8()?;
+        let body = match frame_type {
+            248..=250 => {
+                let offset_delta = self.read_u16()?;
+                StackMapFrameBody::ChopFrame { offset_delta }
+            }
+            251 => {
+                let offset_delta = self.read_u16()?;
+                StackMapFrameBody::SameFrameExtended { offset_delta }
+            }
+            252..=254 => {
+                let offset_delta = self.read_u16()?;
+                let mut locals = vec![];
+                for _ in 0..(frame_type - 251) {
+                    locals.push(self.read_verification_type_info()?);
+                }
+                StackMapFrameBody::AppendFrame {
+                    offset_delta,
+                    locals,
+                }
+            }
+            e => unimplemented!("{}", e),
+        };
+        Some(StackMapFrame { frame_type, body })
+    }
+
+    fn read_verification_type_info(&mut self) -> Option<VerificationTypeInfo> {
+        let tag = self.read_u8()?;
+        match tag {
+            0 => Some(VerificationTypeInfo::Top),
+            1 => Some(VerificationTypeInfo::Integer),
+            2 => Some(VerificationTypeInfo::Float),
+            3 => Some(VerificationTypeInfo::Double),
+            4 => Some(VerificationTypeInfo::Long),
+            7 => {
+                let cpool_index = self.read_u16()?;
+                Some(VerificationTypeInfo::Object { cpool_index })
+            }
+            e => unimplemented!("verification type info {}", e),
+        }
     }
 
     fn read_exception(&mut self) -> Option<Exception> {

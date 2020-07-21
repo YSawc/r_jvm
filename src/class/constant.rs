@@ -31,7 +31,7 @@ pub fn index_to_constant_type(val: u8) -> Option<ConstantType> {
         15 => Some(ConstantType::MethodHandle),
         16 => Some(ConstantType::MethodType),
         18 => Some(ConstantType::InvokeDynamic),
-        _ => None,
+        e => unimplemented!("{}", e),
     }
 }
 
@@ -94,7 +94,7 @@ impl Constant {
     pub fn get_name_and_type_name_index(&self) -> Option<u16> {
         match self {
             Constant::NameAndtypeInfo { name_index, .. } => Some(*name_index),
-            _ => None,
+            e => unimplemented!("{:?}", e),
         }
     }
 
@@ -104,14 +104,14 @@ impl Constant {
                 name_and_type_index,
                 ..
             } => Some(*name_and_type_index),
-            _ => None,
+            e => unimplemented!("{:?}", e),
         }
     }
 
     pub fn get_utf8(&self) -> Option<&String> {
         match self {
             Constant::Utf8Info { str, .. } => Some(str),
-            _ => None,
+            e => unimplemented!("{:?}", e),
         }
     }
 }
