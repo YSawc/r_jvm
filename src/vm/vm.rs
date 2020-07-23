@@ -107,40 +107,39 @@ impl VM {
                     let li = self.stack_machine.imm.pop()?;
                     let res = li - (li / ri) * ri;
                     self.stack_machine.imm.push(res);
-                    println!("self.stack_machine.imm : {:?}", self.stack_machine.imm);
                 }
                 Inst::iinc => {
                     self.increment_i(v[n + 1], v[n + 2]);
-                    println!("self.stack_machine aster iinc : {:?}", self.stack_machine);
+                    println!(
+                        "self.stack_machine after read iinc : {:?}",
+                        self.stack_machine
+                    );
                     n += 2;
                 }
                 Inst::ifeq => {
                     let t = self.stack_machine.imm.pop()?;
-                    println!("{}", t);
-                    // if self.stack_machine.imm.pop()? == 0 {
                     if t == 0 {
-                        // let skip_count = index_to_next_to_goto(n as u8, v).unwrap();
-                        let skip_count = v[v[n as usize + 2] as usize] as usize;
-                        n += skip_count as usize;
+                        n += v[n as usize + 2] as usize - 1;
+                    } else {
+                        n += 2;
                     }
-                    n += 2;
                 }
                 Inst::ifne => {
                     let t = self.stack_machine.imm.pop()?;
-                    println!("{}", t);
                     if t != 0 {
-                        let skip_count = v[v[n as usize + 2] as usize] as usize;
-                        n += skip_count as usize;
+                        n += v[n as usize + 2] as usize - 1;
+                    } else {
+                        n += 2;
                     }
-                    n += 2;
                 }
 
                 Inst::ifge => {
-                    if self.stack_machine.imm.pop()? >= 0 {
-                        let skip_count = v[v[n as usize + 2] as usize] as usize;
-                        n += skip_count as usize;
+                    let t = self.stack_machine.imm.pop()?;
+                    if t >= 0 {
+                        n += v[n as usize + 2] as usize - 1;
+                    } else {
+                        n += 2;
                     }
-                    n += 2;
                 }
                 Inst::if_cmpge => {
                     self.stack_machine.imp_i = check_loop_base(n as u8, v).unwrap();
