@@ -31,7 +31,7 @@ pub fn index_to_constant_type(val: u8) -> Option<ConstantType> {
         15 => Some(ConstantType::MethodHandle),
         16 => Some(ConstantType::MethodType),
         18 => Some(ConstantType::InvokeDynamic),
-        e => unimplemented!("{}", e),
+        _ => panic!(),
     }
 }
 

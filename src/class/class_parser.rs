@@ -262,6 +262,7 @@ impl ClassFileReader {
     fn read_stack_map_frame(&mut self) -> Option<StackMapFrame> {
         let frame_type = self.read_u8()?;
         let body = match frame_type {
+            0..=63 => StackMapFrameBody::SameFrame,
             248..=250 => {
                 let offset_delta = self.read_u16()?;
                 StackMapFrameBody::ChopFrame { offset_delta }
@@ -281,6 +282,27 @@ impl ClassFileReader {
                     locals,
                 }
             }
+            255 => {
+                let offset_delta = self.read_u16()?;
+                let number_of_locals = self.read_u16()?;
+                let mut locals = vec![];
+                for _ in 0..number_of_locals {
+                    locals.push(self.read_verification_type_info()?);
+                }
+                let number_of_stack_items = self.read_u16()?;
+                let mut stack = vec![];
+                for _ in 0..number_of_stack_items {
+                    stack.push(self.read_verification_type_info()?);
+                }
+
+                StackMapFrameBody::FullFrame {
+                    offset_delta,
+                    number_of_locals,
+                    locals,
+                    number_of_stack_items,
+                    stack,
+                }
+            }
             e => unimplemented!("{}", e),
         };
         Some(StackMapFrame { frame_type, body })
@@ -298,7 +320,7 @@ impl ClassFileReader {
                 let cpool_index = self.read_u16()?;
                 Some(VerificationTypeInfo::Object { cpool_index })
             }
-            e => unimplemented!("verification type info {}", e),
+            e => unimplemented!("{}", e),
         }
     }
 

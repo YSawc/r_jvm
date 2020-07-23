@@ -64,15 +64,15 @@ pub enum StackMapFrameBody {
     SameLocals1StackItemFrame {
         stack: VerificationTypeInfo,
     },
-    AppendFrame {
-        offset_delta: u16,
-        locals: Vec<VerificationTypeInfo>,
-    },
     ChopFrame {
         offset_delta: u16,
     },
     SameFrameExtended {
         offset_delta: u16,
+    },
+    AppendFrame {
+        offset_delta: u16,
+        locals: Vec<VerificationTypeInfo>,
     },
     FullFrame {
         offset_delta: u16,

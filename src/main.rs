@@ -4,9 +4,10 @@ fn main() {
 }
 
 #[test]
-fn just_add_int() {
+fn test() {
     let mut vm = vm::VM::new();
     vm.run("JustAddInt");
     vm.run("CallAdd");
     vm.run("Fibonacci");
+    vm.run("FizzBuzz");
 }

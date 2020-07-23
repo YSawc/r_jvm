@@ -9,6 +9,7 @@ pub struct VM {
     stack_machine: stack::StackMachine,
     gc: gc::ClassHeap,
     topic_class: class_file::ClassFile,
+    variables: Vec<u8>,
 }
 
 impl VM {
@@ -17,6 +18,7 @@ impl VM {
             stack_machine: stack::StackMachine::new(),
             gc: gc::ClassHeap::new(),
             topic_class: class_file::ClassFile::new(),
+            variables: vec![0; 255],
         }
     }
 }
@@ -71,11 +73,25 @@ impl VM {
                     n += 1;
                     self.stack_machine.imm.push(v[n]);
                 }
+                Inst::iload => {
+                    self.stack_machine
+                        .imm
+                        .push(self.variables[v[n + 1] as usize]);
+                    n += 1;
+                }
                 Inst::iload_0 => self.stack_machine.imm.push(self.stack_machine.i_st0 as u8),
                 Inst::iload_1 => self.stack_machine.imm.push(self.stack_machine.i_st1 as u8),
                 Inst::iload_2 => self.stack_machine.imm.push(self.stack_machine.i_st2 as u8),
                 Inst::iload_3 => self.stack_machine.imm.push(self.stack_machine.i_st3 as u8),
                 Inst::aload_0 => {}
+                Inst::istore => {
+                    self.variables[v[n + 1] as usize] = self.stack_machine.imm.pop().unwrap();
+                    println!(
+                        "self.variables[v[n + 1] as usize] : {}",
+                        self.variables[v[n + 1] as usize]
+                    );
+                    n += 1;
+                }
                 Inst::istore_1 => self.stack_machine.i_st1 = self.stack_machine.imm.pop()? as i8,
                 Inst::istore_2 => self.stack_machine.i_st2 = self.stack_machine.imm.pop()? as i8,
                 Inst::istore_3 => self.stack_machine.i_st3 = self.stack_machine.imm.pop()? as i8,
@@ -86,14 +102,42 @@ impl VM {
                     let res = ri + li;
                     self.stack_machine.imm.push(res);
                 }
+                Inst::irem => {
+                    let ri = self.stack_machine.imm.pop()?;
+                    let li = self.stack_machine.imm.pop()?;
+                    let res = li - (li / ri) * ri;
+                    self.stack_machine.imm.push(res);
+                    println!("self.stack_machine.imm : {:?}", self.stack_machine.imm);
+                }
                 Inst::iinc => {
                     self.increment_i(v[n + 1], v[n + 2]);
                     println!("self.stack_machine aster iinc : {:?}", self.stack_machine);
                     n += 2;
                 }
+                Inst::ifeq => {
+                    let t = self.stack_machine.imm.pop()?;
+                    println!("{}", t);
+                    // if self.stack_machine.imm.pop()? == 0 {
+                    if t == 0 {
+                        // let skip_count = index_to_next_to_goto(n as u8, v).unwrap();
+                        let skip_count = v[v[n as usize + 2] as usize] as usize;
+                        n += skip_count as usize;
+                    }
+                    n += 2;
+                }
+                Inst::ifne => {
+                    let t = self.stack_machine.imm.pop()?;
+                    println!("{}", t);
+                    if t != 0 {
+                        let skip_count = v[v[n as usize + 2] as usize] as usize;
+                        n += skip_count as usize;
+                    }
+                    n += 2;
+                }
+
                 Inst::ifge => {
                     if self.stack_machine.imm.pop()? >= 0 {
-                        let skip_count = index_to_next_to_goto(n as u8, v).unwrap();
+                        let skip_count = v[v[n as usize + 2] as usize] as usize;
                         n += skip_count as usize;
                     }
                     n += 2;
@@ -101,6 +145,14 @@ impl VM {
                 Inst::if_cmpge => {
                     self.stack_machine.imp_i = check_loop_base(n as u8, v).unwrap();
                     if self.stack_machine.imm.pop() <= self.stack_machine.imm.pop() {
+                        n = v[n + v[n as usize + 2] as usize] as usize;
+                    } else {
+                        n += 2;
+                    }
+                }
+                Inst::if_cmpgt => {
+                    self.stack_machine.imp_i = check_loop_base(n as u8, v).unwrap();
+                    if self.stack_machine.imm.pop() < self.stack_machine.imm.pop() {
                         n = v[n + v[n as usize + 2] as usize] as usize;
                     } else {
                         n += 2;
@@ -171,7 +223,7 @@ impl VM {
             1 => self.stack_machine.i_st1 = self.stack_machine.imm.pop()? as i8,
             2 => self.stack_machine.i_st2 = self.stack_machine.imm.pop()? as i8,
             3 => self.stack_machine.i_st3 = self.stack_machine.imm.pop()? as i8,
-            e => unimplemented!("{}", e),
+            _ => panic!(),
         }
         Some(())
     }
@@ -216,7 +268,7 @@ impl VM {
             1 => self.stack_machine.i_st1 += c as i8,
             2 => self.stack_machine.i_st2 += c as i8,
             3 => self.stack_machine.i_st3 += c as i8,
-            e => unimplemented!("{}", e),
+            _ => panic!(),
         }
         Some(())
     }
@@ -237,7 +289,7 @@ fn index_to_next_to_goto(c_idx: u8, v: &Vec<u8>) -> Option<u8> {
 fn check_loop_base(idx: u8, v: &Vec<u8>) -> Option<u8> {
     for i in 0..(v.len() as u8 - idx) {
         match v[idx as usize - i as usize] {
-            27 | 28 | 29 => return Some(idx - i),
+            21 | 27 | 28 | 29 => return Some(idx - i),
             _ => {}
         }
     }
@@ -257,20 +309,26 @@ mod Inst {
     pub const iconst_4: u8 = 7;
     pub const iconst_5: u8 = 8;
     pub const bipush: u8 = 16;
+    pub const iload: u8 = 21;
     pub const iload_0: u8 = 26;
     pub const iload_1: u8 = 27;
     pub const iload_2: u8 = 28;
     pub const iload_3: u8 = 29;
     pub const aload_0: u8 = 42;
+    pub const istore: u8 = 54;
     pub const istore_0: u8 = 59;
     pub const istore_1: u8 = 60;
     pub const istore_2: u8 = 61;
     pub const istore_3: u8 = 62;
     pub const pop: u8 = 87;
     pub const iadd: u8 = 96;
+    pub const irem: u8 = 112;
     pub const iinc: u8 = 132;
+    pub const ifeq: u8 = 153;
+    pub const ifne: u8 = 154;
     pub const ifge: u8 = 156;
     pub const if_cmpge: u8 = 162;
+    pub const if_cmpgt: u8 = 163;
     pub const goto: u8 = 167;
     pub const ireturn: u8 = 172;
     pub const _return: u8 = 177;
