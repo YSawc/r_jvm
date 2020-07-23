@@ -25,12 +25,7 @@ impl VM {
 
 impl VM {
     pub fn run(&mut self, class_name: &str) -> () {
-        let file_path = vec![
-            "java/".to_string(),
-            class_name.to_string(),
-            ".class".to_string(),
-        ]
-        .join("");
+        let file_path = format!("java/{}.class", class_name);
         println!("========================================");
         println!("reading .. {}.", file_path);
         println!("========================================");
@@ -62,9 +57,9 @@ impl VM {
 
     pub fn read_ope_code(&mut self, v: &Vec<u8>) -> Option<()> {
         let mut n = 0;
-        println!("v.len() : {}", v.len());
+        // println!("v.len() : {}", v.len());
         while n < v.len() {
-            println!("n : {}, v[n] : {}", n, v[n]);
+            // println!("v[{}] : {}", n, v[n]);
             match v[n] {
                 Inst::iconst_m1..=Inst::iconst_5 => {
                     self.stack_machine.imm.push(v[n] as i8 - 3);
@@ -80,10 +75,10 @@ impl VM {
                         .push(self.variables[v[n + 1] as usize] as i8);
                     n += 1;
                 }
-                Inst::iload_0 => self.stack_machine.imm.push(self.stack_machine.i_st0 as i8),
-                Inst::iload_1 => self.stack_machine.imm.push(self.stack_machine.i_st1 as i8),
-                Inst::iload_2 => self.stack_machine.imm.push(self.stack_machine.i_st2 as i8),
-                Inst::iload_3 => self.stack_machine.imm.push(self.stack_machine.i_st3 as i8),
+                Inst::iload_0 => self.stack_machine.imm.push(self.stack_machine.i_st0),
+                Inst::iload_1 => self.stack_machine.imm.push(self.stack_machine.i_st1),
+                Inst::iload_2 => self.stack_machine.imm.push(self.stack_machine.i_st2),
+                Inst::iload_3 => self.stack_machine.imm.push(self.stack_machine.i_st3),
                 Inst::aload_0 => {}
                 Inst::istore => {
                     self.variables[v[n + 1] as usize] = self.stack_machine.imm.pop().unwrap() as u8;
@@ -93,9 +88,9 @@ impl VM {
                     );
                     n += 1;
                 }
-                Inst::istore_1 => self.stack_machine.i_st1 = self.stack_machine.imm.pop()? as i8,
-                Inst::istore_2 => self.stack_machine.i_st2 = self.stack_machine.imm.pop()? as i8,
-                Inst::istore_3 => self.stack_machine.i_st3 = self.stack_machine.imm.pop()? as i8,
+                Inst::istore_1 => self.stack_machine.i_st1 = self.stack_machine.imm.pop()?,
+                Inst::istore_2 => self.stack_machine.i_st2 = self.stack_machine.imm.pop()?,
+                Inst::istore_3 => self.stack_machine.i_st3 = self.stack_machine.imm.pop()?,
                 Inst::pop => self
                     .stack_machine
                     .imm
@@ -136,7 +131,6 @@ impl VM {
                         n += 2;
                     }
                 }
-
                 Inst::ifge => {
                     let t = self.stack_machine.imm.pop()?;
                     if t >= 0 {
@@ -168,13 +162,25 @@ impl VM {
                 Inst::ireturn => {
                     let ret_i = self.stack_machine.imm.pop().unwrap();
                     self.stack_machine.op.push(ret_i as u8);
-                    println!("{:?}", self.stack_machine);
-                    println!("{:?}", self.variables);
+                    println!(
+                        "self.stack_machine after read ireturn : {:?}",
+                        self.stack_machine
+                    );
+                    println!(
+                        "self.stack_machine after read ireturn : {:?}",
+                        self.variables
+                    );
                     return Some(());
                 }
                 Inst::_return => {
-                    println!("{:?}", self.stack_machine);
-                    println!("{:?}", self.variables);
+                    println!(
+                        "self.stack_machine after read _return : {:?}",
+                        self.stack_machine
+                    );
+                    println!(
+                        "self.stack_machine after read _return : {:?}",
+                        self.variables
+                    );
                     return Some(());
                 }
                 Inst::invoke_special => {
@@ -227,10 +233,10 @@ impl VM {
 
     pub fn push_to_i_st(&mut self, idx: u8) -> Option<()> {
         match idx {
-            0 => self.stack_machine.i_st0 = self.stack_machine.imm.pop()? as i8,
-            1 => self.stack_machine.i_st1 = self.stack_machine.imm.pop()? as i8,
-            2 => self.stack_machine.i_st2 = self.stack_machine.imm.pop()? as i8,
-            3 => self.stack_machine.i_st3 = self.stack_machine.imm.pop()? as i8,
+            0 => self.stack_machine.i_st0 = self.stack_machine.imm.pop()?,
+            1 => self.stack_machine.i_st1 = self.stack_machine.imm.pop()?,
+            2 => self.stack_machine.i_st2 = self.stack_machine.imm.pop()?,
+            3 => self.stack_machine.i_st3 = self.stack_machine.imm.pop()?,
             _ => panic!(),
         }
         Some(())
