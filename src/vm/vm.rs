@@ -62,6 +62,7 @@ impl VM {
 
     pub fn read_ope_code(&mut self, v: &Vec<u8>) -> Option<()> {
         let mut n = 0;
+        println!("v.len() : {}", v.len());
         while n < v.len() {
             println!("n : {}, v[n] : {}", n, v[n]);
             match v[n] {
@@ -157,15 +158,20 @@ impl VM {
                         n += 2;
                     }
                 }
-                Inst::goto => n = self.stack_machine.imp_i as usize - 1,
+                Inst::goto => match v[n as usize + 1] {
+                    255 => n = self.stack_machine.imp_i as usize - 1,
+                    _ => n += v[n as usize + 2] as usize - 1,
+                },
                 Inst::ireturn => {
                     let ret_i = self.stack_machine.imm.pop().unwrap();
                     self.stack_machine.op.push(ret_i);
                     println!("{:?}", self.stack_machine);
+                    println!("{:?}", self.variables);
                     return Some(());
                 }
                 Inst::_return => {
                     println!("{:?}", self.stack_machine);
+                    println!("{:?}", self.variables);
                     return Some(());
                 }
                 Inst::invoke_special => {
@@ -267,22 +273,11 @@ impl VM {
             1 => self.stack_machine.i_st1 += c as i8,
             2 => self.stack_machine.i_st2 += c as i8,
             3 => self.stack_machine.i_st3 += c as i8,
-            _ => panic!(),
+            _ => self.variables[idx as usize] += c,
         }
+        // println!("{:?}", self.variables);
         Some(())
     }
-}
-
-fn index_to_next_to_goto(c_idx: u8, v: &Vec<u8>) -> Option<u8> {
-    let mut i = c_idx + 1;
-    let segf_c = 128;
-    while v[i as usize] != 167 {
-        i += 1;
-        if i >= segf_c {
-            panic!();
-        }
-    }
-    return Some(i - c_idx);
 }
 
 fn check_loop_base(idx: u8, v: &Vec<u8>) -> Option<u8> {
