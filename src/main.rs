@@ -1,3 +1,4 @@
+#[allow(unused_imports)]
 use r_jvm::vm::vm;
 fn main() {
     println!("{}", 0xff >> 8);

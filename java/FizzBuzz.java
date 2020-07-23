@@ -1,4 +1,4 @@
-class FizzBuzz{
+class FizzBuzz {
     public static void main(String[] args){
       int fb_c = 0;
       int f_c = 0;

@@ -8,7 +8,7 @@ pub struct StackMachine {
     pub f_st1: f32,
     pub f_st2: f32,
     pub f_st3: f32,
-    pub imm: Vec<u8>,
+    pub imm: Vec<i8>,
     pub op: Vec<u8>,
     pub imp_i: u8,
 }

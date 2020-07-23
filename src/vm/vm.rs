@@ -67,26 +67,26 @@ impl VM {
             println!("n : {}, v[n] : {}", n, v[n]);
             match v[n] {
                 Inst::iconst_m1..=Inst::iconst_5 => {
-                    self.stack_machine.imm.push(v[n] - 3);
+                    self.stack_machine.imm.push(v[n] as i8 - 3);
                     println!("self.stack_machine.imm : {:?}", self.stack_machine.imm);
                 }
                 Inst::bipush => {
                     n += 1;
-                    self.stack_machine.imm.push(v[n]);
+                    self.stack_machine.imm.push(v[n] as i8);
                 }
                 Inst::iload => {
                     self.stack_machine
                         .imm
-                        .push(self.variables[v[n + 1] as usize]);
+                        .push(self.variables[v[n + 1] as usize] as i8);
                     n += 1;
                 }
-                Inst::iload_0 => self.stack_machine.imm.push(self.stack_machine.i_st0 as u8),
-                Inst::iload_1 => self.stack_machine.imm.push(self.stack_machine.i_st1 as u8),
-                Inst::iload_2 => self.stack_machine.imm.push(self.stack_machine.i_st2 as u8),
-                Inst::iload_3 => self.stack_machine.imm.push(self.stack_machine.i_st3 as u8),
+                Inst::iload_0 => self.stack_machine.imm.push(self.stack_machine.i_st0 as i8),
+                Inst::iload_1 => self.stack_machine.imm.push(self.stack_machine.i_st1 as i8),
+                Inst::iload_2 => self.stack_machine.imm.push(self.stack_machine.i_st2 as i8),
+                Inst::iload_3 => self.stack_machine.imm.push(self.stack_machine.i_st3 as i8),
                 Inst::aload_0 => {}
                 Inst::istore => {
-                    self.variables[v[n + 1] as usize] = self.stack_machine.imm.pop().unwrap();
+                    self.variables[v[n + 1] as usize] = self.stack_machine.imm.pop().unwrap() as u8;
                     println!(
                         "self.variables[v[n + 1] as usize] : {}",
                         self.variables[v[n + 1] as usize]
@@ -96,7 +96,10 @@ impl VM {
                 Inst::istore_1 => self.stack_machine.i_st1 = self.stack_machine.imm.pop()? as i8,
                 Inst::istore_2 => self.stack_machine.i_st2 = self.stack_machine.imm.pop()? as i8,
                 Inst::istore_3 => self.stack_machine.i_st3 = self.stack_machine.imm.pop()? as i8,
-                Inst::pop => self.stack_machine.imm.push(self.stack_machine.op.pop()?),
+                Inst::pop => self
+                    .stack_machine
+                    .imm
+                    .push(self.stack_machine.op.pop()? as i8),
                 Inst::iadd => {
                     let ri = self.stack_machine.imm.pop()?;
                     let li = self.stack_machine.imm.pop()?;
@@ -164,7 +167,7 @@ impl VM {
                 },
                 Inst::ireturn => {
                     let ret_i = self.stack_machine.imm.pop().unwrap();
-                    self.stack_machine.op.push(ret_i);
+                    self.stack_machine.op.push(ret_i as u8);
                     println!("{:?}", self.stack_machine);
                     println!("{:?}", self.variables);
                     return Some(());
