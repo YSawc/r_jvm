@@ -11,4 +11,5 @@ fn test() {
     vm.run("CallAdd");
     vm.run("Fibonacci");
     vm.run("FizzBuzz");
+    vm.run("CreateBuffer");
 }

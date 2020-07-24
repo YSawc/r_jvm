@@ -2,7 +2,7 @@ use super::super::class::attribute::Attribute;
 use super::super::class::{class_file, class_parser};
 use super::super::gc::gc;
 use super::super::stack::stack;
-
+use std::collections::HashMap;
 use std::vec::Vec;
 
 pub struct VM {
@@ -10,6 +10,7 @@ pub struct VM {
     gc: gc::ClassHeap,
     topic_class: class_file::ClassFile,
     variables: Vec<u8>,
+    hashes: HashMap<u8, Vec<u8>>,
 }
 
 impl VM {
@@ -19,6 +20,7 @@ impl VM {
             gc: gc::ClassHeap::new(),
             topic_class: class_file::ClassFile::new(),
             variables: vec![0; 255],
+            hashes: HashMap::default(),
         }
     }
 }
@@ -40,8 +42,9 @@ impl VM {
 
         self.gc.insert_class(class_name, reader.read().unwrap());
         self.topic_class = self.gc.get_class(class_name).unwrap().clone();
+        self.hashes.insert(255, vec![0]);
         self.read_idx_code(0);
-        self.drop_stack_machine();
+        self.drop_machine();
         Some(());
     }
 
@@ -59,7 +62,7 @@ impl VM {
         let mut n = 0;
         // println!("v.len() : {}", v.len());
         while n < v.len() {
-            // println!("v[{}] : {}", n, v[n]);
+            println!("v[{}] : {}", n, v[n]);
             match v[n] {
                 Inst::iconst_m1..=Inst::iconst_5 => {
                     self.stack_machine.imm.push(v[n] as i8 - 3);
@@ -91,6 +94,23 @@ impl VM {
                 Inst::istore_1 => self.stack_machine.i_st1 = self.stack_machine.imm.pop()?,
                 Inst::istore_2 => self.stack_machine.i_st2 = self.stack_machine.imm.pop()?,
                 Inst::istore_3 => self.stack_machine.i_st3 = self.stack_machine.imm.pop()?,
+                Inst::astore_1..=Inst::astore_3 => {
+                    let store_idx = v[n] - 75;
+                    match v[n + 2] {
+                        Inst::iconst_m1..=Inst::iconst_5 => {
+                            let arr_idx = v[n + 3];
+                            let insert_num = v[n + 4] - 3;
+                            self.astore(store_idx, arr_idx, insert_num);
+                            n += 4;
+                        }
+                        _ => {
+                            let arr_idx = v[n + 3];
+                            let insert_num = v[n + 4] - 3;
+                            self.astore(store_idx, arr_idx, insert_num);
+                            n += 5;
+                        }
+                    }
+                }
                 Inst::pop => self
                     .stack_machine
                     .imm
@@ -195,6 +215,13 @@ impl VM {
                     n += 2;
                     self.read_idx_code(idx).unwrap();
                 }
+                Inst::newarray => {
+                    let arr_count = self.hashes.get_mut(&255).unwrap()[0];
+                    self.new_array(arr_count);
+                    println!("stackmachine read after newarray {:?}", self.stack_machine);
+                    println!("hashes read after newarray{:?}", self.hashes);
+                    n += 1;
+                }
                 e => unimplemented!("{}", e),
             }
             n += 1;
@@ -272,8 +299,22 @@ impl VM {
         None
     }
 
+    pub fn drop_machine(&mut self) -> () {
+        self.drop_stack_machine();
+        self.drop_variables();
+        self.drop_hashes();
+    }
+
     pub fn drop_stack_machine(&mut self) -> () {
         self.stack_machine = stack::StackMachine::new();
+    }
+
+    pub fn drop_variables(&mut self) -> () {
+        self.variables = vec![0; 255];
+    }
+
+    pub fn drop_hashes(&mut self) -> () {
+        self.hashes = HashMap::default();
     }
 
     pub fn increment_i(&mut self, idx: u8, c: u8) -> Option<()> {
@@ -285,6 +326,38 @@ impl VM {
             _ => self.variables[idx as usize] += c,
         }
         // println!("{:?}", self.variables);
+        Some(())
+    }
+
+    pub fn new_array(&mut self, arr_count: u8) -> Option<()> {
+        self.hashes.get_mut(&255).unwrap()[0] += 1;
+        match arr_count {
+            0 => self.stack_machine.a_st1 = vec![0; self.stack_machine.imm.pop().unwrap() as usize],
+            1 => self.stack_machine.a_st2 = vec![0; self.stack_machine.imm.pop().unwrap() as usize],
+            2 => self.stack_machine.a_st3 = vec![0; self.stack_machine.imm.pop().unwrap() as usize],
+            _ => {
+                self.hashes.insert(
+                    arr_count,
+                    vec![0; self.stack_machine.imm.pop().unwrap() as usize],
+                );
+                ()
+            }
+        }
+        Some(())
+    }
+
+    pub fn astore(&mut self, store_idx: u8, arr_idx: u8, insert_num: u8) -> Option<()> {
+        println!("store_idx : {}", store_idx);
+        println!("arr_idx : {}", arr_idx);
+        println!("insert_num : {}", insert_num);
+        // 1 => self.stack_machine.a_st1[arr_idx as usize] = insert_num as i8,
+        match store_idx {
+            1 => self.stack_machine.a_st1[arr_idx as usize] = insert_num as i8,
+            2 => self.stack_machine.a_st2[arr_idx as usize] = insert_num as i8,
+            3 => self.stack_machine.a_st3[arr_idx as usize] = insert_num as i8,
+            _ => self.hashes.get_mut(&store_idx).unwrap()[arr_idx as usize] = insert_num,
+        }
+
         Some(())
     }
 }
@@ -323,6 +396,9 @@ mod Inst {
     pub const istore_1: u8 = 60;
     pub const istore_2: u8 = 61;
     pub const istore_3: u8 = 62;
+    pub const astore_1: u8 = 76;
+    pub const astore_2: u8 = 77;
+    pub const astore_3: u8 = 78;
     pub const pop: u8 = 87;
     pub const iadd: u8 = 96;
     pub const irem: u8 = 112;
@@ -338,4 +414,5 @@ mod Inst {
     pub const invoke_virtual: u8 = 182;
     pub const invoke_special: u8 = 183;
     pub const invoke_static: u8 = 184;
+    pub const newarray: u8 = 188;
 }
