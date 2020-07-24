@@ -62,11 +62,11 @@ impl VM {
         let mut n = 0;
         // println!("v.len() : {}", v.len());
         while n < v.len() {
-            println!("v[{}] : {}", n, v[n]);
+            // println!("v[{}] : {}", n, v[n]);
             match v[n] {
                 Inst::iconst_m1..=Inst::iconst_5 => {
                     self.stack_machine.imm.push(v[n] as i8 - 3);
-                    println!("self.stack_machine.imm : {:?}", self.stack_machine.imm);
+                    // println!("self.stack_machine.imm : {:?}", self.stack_machine.imm);
                 }
                 Inst::bipush => {
                     n += 1;
@@ -110,6 +110,7 @@ impl VM {
                             n += 5;
                         }
                     }
+                    println!("{:?}", self.hashes);
                 }
                 Inst::pop => self
                     .stack_machine
@@ -138,7 +139,7 @@ impl VM {
                 Inst::ifeq => {
                     let t = self.stack_machine.imm.pop()?;
                     if t == 0 {
-                        n += v[n as usize + 2] as usize - 1;
+                        n += (v[n as usize + 1] as usize >> 8) + v[n as usize + 2] as usize - 1;
                     } else {
                         n += 2;
                     }
@@ -146,7 +147,7 @@ impl VM {
                 Inst::ifne => {
                     let t = self.stack_machine.imm.pop()?;
                     if t != 0 {
-                        n += v[n as usize + 2] as usize - 1;
+                        n += (v[n as usize + 1] as usize >> 8) + v[n as usize + 2] as usize - 1;
                     } else {
                         n += 2;
                     }
@@ -154,7 +155,7 @@ impl VM {
                 Inst::ifge => {
                     let t = self.stack_machine.imm.pop()?;
                     if t >= 0 {
-                        n += v[n as usize + 2] as usize - 1;
+                        n += (v[n as usize + 1] as usize >> 8) + v[n as usize + 2] as usize - 1;
                     } else {
                         n += 2;
                     }
@@ -162,7 +163,8 @@ impl VM {
                 Inst::if_cmpge => {
                     self.stack_machine.imp_i = check_loop_base(n as u8, v).unwrap();
                     if self.stack_machine.imm.pop() <= self.stack_machine.imm.pop() {
-                        n = v[n + v[n as usize + 2] as usize] as usize;
+                        n = v[n + (v[n as usize + 1] as usize >> 8) + v[n as usize + 2] as usize]
+                            as usize;
                     } else {
                         n += 2;
                     }
@@ -170,14 +172,15 @@ impl VM {
                 Inst::if_cmpgt => {
                     self.stack_machine.imp_i = check_loop_base(n as u8, v).unwrap();
                     if self.stack_machine.imm.pop() < self.stack_machine.imm.pop() {
-                        n = v[n + v[n as usize + 2] as usize] as usize;
+                        n = v[n + (v[n as usize + 1] as usize >> 8) + v[n as usize + 2] as usize]
+                            as usize;
                     } else {
                         n += 2;
                     }
                 }
                 Inst::goto => match v[n as usize + 1] {
                     255 => n = self.stack_machine.imp_i as usize - 1,
-                    _ => n += v[n as usize + 2] as usize - 1,
+                    _ => n += (v[n as usize + 1] as usize >> 8) + v[n as usize + 2] as usize - 1,
                 },
                 Inst::ireturn => {
                     let ret_i = self.stack_machine.imm.pop().unwrap();
@@ -186,10 +189,7 @@ impl VM {
                         "self.stack_machine after read ireturn : {:?}",
                         self.stack_machine
                     );
-                    println!(
-                        "self.stack_machine after read ireturn : {:?}",
-                        self.variables
-                    );
+                    println!("self.variables after read ireturn : {:?}", self.variables);
                     return Some(());
                 }
                 Inst::_return => {
@@ -198,7 +198,7 @@ impl VM {
                         self.stack_machine
                     );
                     println!(
-                        "self.stack_machine after read _return : {:?}",
+                        "self.variables stack_machine after read _return : {:?}",
                         self.variables
                     );
                     return Some(());
