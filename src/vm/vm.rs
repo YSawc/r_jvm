@@ -182,6 +182,30 @@ impl VM {
                     255 => n = self.stack_machine.imp_i as usize - 1,
                     _ => n += (v[n as usize + 1] as usize >> 8) + v[n as usize + 2] as usize - 1,
                 },
+                Inst::lookupswitch => {
+                    n += 1;
+                    while v[n] == 0 {
+                        n += 1;
+                    }
+
+                    let mut idx_hs: HashMap<u8, u8> = HashMap::default();
+                    idx_hs.insert(255, v[n]);
+                    n += 4;
+                    let loop_c = v[n];
+                    n += 1;
+                    for _ in 0..loop_c {
+                        idx_hs.insert(v[n + 3], v[n + 7]);
+                        n += 8;
+                    }
+
+                    let imm = self.stack_machine.imm.pop().unwrap();
+
+                    let goto_idx: u8 = match idx_hs.get_mut(&(imm as u8)) {
+                        Some(n) => *n,
+                        _ => *idx_hs.get_mut(&255).unwrap(),
+                    };
+                    n = goto_idx as usize;
+                }
                 Inst::ireturn => {
                     let ret_i = self.stack_machine.imm.pop().unwrap();
                     self.stack_machine.op.push(ret_i as u8);
@@ -189,7 +213,7 @@ impl VM {
                         "self.stack_machine after read ireturn : {:?}",
                         self.stack_machine
                     );
-                    println!("self.variables after read ireturn : {:?}", self.variables);
+                    // println!("self.variables after read ireturn : {:?}", self.variables);
                     return Some(());
                 }
                 Inst::_return => {
@@ -197,10 +221,7 @@ impl VM {
                         "self.stack_machine after read _return : {:?}",
                         self.stack_machine
                     );
-                    println!(
-                        "self.variables stack_machine after read _return : {:?}",
-                        self.variables
-                    );
+                    // println!("self.variables after read _return : {:?}", self.variables);
                     return Some(());
                 }
                 Inst::invoke_special => {
@@ -409,6 +430,7 @@ mod Inst {
     pub const if_cmpge: u8 = 162;
     pub const if_cmpgt: u8 = 163;
     pub const goto: u8 = 167;
+    pub const lookupswitch: u8 = 171;
     pub const ireturn: u8 = 172;
     pub const _return: u8 = 177;
     pub const invoke_virtual: u8 = 182;

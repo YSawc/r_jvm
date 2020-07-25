@@ -12,4 +12,5 @@ fn test() {
     vm.run("Fibonacci");
     vm.run("FizzBuzz");
     vm.run("CreateBuffer");
+    vm.run("Switch");
 }
