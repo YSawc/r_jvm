@@ -1,20 +1,20 @@
 #[derive(Debug)]
 pub struct StackMachine {
-    pub i_st0: i8,
-    pub i_st1: i8,
-    pub i_st2: i8,
-    pub i_st3: i8,
+    pub i_st0: i32,
+    pub i_st1: i32,
+    pub i_st2: i32,
+    pub i_st3: i32,
     pub f_st0: f32,
     pub f_st1: f32,
     pub f_st2: f32,
     pub f_st3: f32,
-    pub a_st0: Vec<i8>,
-    pub a_st1: Vec<i8>,
-    pub a_st2: Vec<i8>,
-    pub a_st3: Vec<i8>,
-    pub imm: Vec<i8>,
-    pub op: Vec<u8>,
-    pub imp_i: u8,
+    pub a_st0: Vec<i32>,
+    pub a_st1: Vec<i32>,
+    pub a_st2: Vec<i32>,
+    pub a_st3: Vec<i32>,
+    pub imm: Vec<i64>,
+    pub op: Vec<i64>,
+    pub imp_i: i32,
 }
 
 impl StackMachine {

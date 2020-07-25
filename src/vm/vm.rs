@@ -9,7 +9,7 @@ pub struct VM {
     stack_machine: stack::StackMachine,
     gc: gc::ClassHeap,
     topic_class: class_file::ClassFile,
-    variables: Vec<u8>,
+    variables: Vec<i64>,
     hashes: HashMap<u8, Vec<u8>>,
 }
 
@@ -65,35 +65,43 @@ impl VM {
             // println!("v[{}] : {}", n, v[n]);
             match v[n] {
                 Inst::iconst_m1..=Inst::iconst_5 => {
-                    self.stack_machine.imm.push(v[n] as i8 - 3);
+                    self.stack_machine.imm.push(v[n] as i64 - 3);
                     // println!("self.stack_machine.imm : {:?}", self.stack_machine.imm);
                 }
                 Inst::bipush => {
                     n += 1;
-                    self.stack_machine.imm.push(v[n] as i8);
+                    self.stack_machine.imm.push(v[n] as i64);
+                }
+                Inst::pipush => {
+                    println!("{:?}", self.stack_machine);
+                    self.stack_machine
+                        .imm
+                        .push(((v[n + 1] * 255) as i64) + (v[n + 2] as i64 + 1));
+                    n += 2;
                 }
                 Inst::iload => {
                     self.stack_machine
                         .imm
-                        .push(self.variables[v[n + 1] as usize] as i8);
+                        .push(self.variables[v[n + 1] as usize] as i64);
                     n += 1;
                 }
-                Inst::iload_0 => self.stack_machine.imm.push(self.stack_machine.i_st0),
-                Inst::iload_1 => self.stack_machine.imm.push(self.stack_machine.i_st1),
-                Inst::iload_2 => self.stack_machine.imm.push(self.stack_machine.i_st2),
-                Inst::iload_3 => self.stack_machine.imm.push(self.stack_machine.i_st3),
+                Inst::iload_0 => self.stack_machine.imm.push(self.stack_machine.i_st0 as i64),
+                Inst::iload_1 => self.stack_machine.imm.push(self.stack_machine.i_st1 as i64),
+                Inst::iload_2 => self.stack_machine.imm.push(self.stack_machine.i_st2 as i64),
+                Inst::iload_3 => self.stack_machine.imm.push(self.stack_machine.i_st3 as i64),
                 Inst::aload_0 => {}
                 Inst::istore => {
-                    self.variables[v[n + 1] as usize] = self.stack_machine.imm.pop().unwrap() as u8;
+                    self.variables[v[n + 1] as usize] =
+                        self.stack_machine.imm.pop().unwrap() as i64;
                     println!(
                         "self.variables[v[n + 1] as usize] : {}",
                         self.variables[v[n + 1] as usize]
                     );
                     n += 1;
                 }
-                Inst::istore_1 => self.stack_machine.i_st1 = self.stack_machine.imm.pop()?,
-                Inst::istore_2 => self.stack_machine.i_st2 = self.stack_machine.imm.pop()?,
-                Inst::istore_3 => self.stack_machine.i_st3 = self.stack_machine.imm.pop()?,
+                Inst::istore_1 => self.stack_machine.i_st1 = self.stack_machine.imm.pop()? as i32,
+                Inst::istore_2 => self.stack_machine.i_st2 = self.stack_machine.imm.pop()? as i32,
+                Inst::istore_3 => self.stack_machine.i_st3 = self.stack_machine.imm.pop()? as i32,
                 Inst::astore_1..=Inst::astore_3 => {
                     let store_idx = v[n] - 75;
                     match v[n + 2] {
@@ -115,7 +123,7 @@ impl VM {
                 Inst::pop => self
                     .stack_machine
                     .imm
-                    .push(self.stack_machine.op.pop()? as i8),
+                    .push(self.stack_machine.op.pop()? as i64),
                 Inst::iadd => {
                     let ri = self.stack_machine.imm.pop()?;
                     let li = self.stack_machine.imm.pop()?;
@@ -161,7 +169,7 @@ impl VM {
                     }
                 }
                 Inst::if_cmpge => {
-                    self.stack_machine.imp_i = check_loop_base(n as u8, v).unwrap();
+                    self.stack_machine.imp_i = check_loop_base(n as i32, v).unwrap() as i32;
                     if self.stack_machine.imm.pop() <= self.stack_machine.imm.pop() {
                         n = v[n + (v[n as usize + 1] as usize >> 8) + v[n as usize + 2] as usize]
                             as usize;
@@ -170,7 +178,7 @@ impl VM {
                     }
                 }
                 Inst::if_cmpgt => {
-                    self.stack_machine.imp_i = check_loop_base(n as u8, v).unwrap();
+                    self.stack_machine.imp_i = check_loop_base(n as i32, v).unwrap();
                     if self.stack_machine.imm.pop() < self.stack_machine.imm.pop() {
                         n = v[n + (v[n as usize + 1] as usize >> 8) + v[n as usize + 2] as usize]
                             as usize;
@@ -208,7 +216,7 @@ impl VM {
                 }
                 Inst::ireturn => {
                     let ret_i = self.stack_machine.imm.pop().unwrap();
-                    self.stack_machine.op.push(ret_i as u8);
+                    self.stack_machine.op.push(ret_i);
                     println!(
                         "self.stack_machine after read ireturn : {:?}",
                         self.stack_machine
@@ -281,10 +289,10 @@ impl VM {
 
     pub fn push_to_i_st(&mut self, idx: u8) -> Option<()> {
         match idx {
-            0 => self.stack_machine.i_st0 = self.stack_machine.imm.pop()?,
-            1 => self.stack_machine.i_st1 = self.stack_machine.imm.pop()?,
-            2 => self.stack_machine.i_st2 = self.stack_machine.imm.pop()?,
-            3 => self.stack_machine.i_st3 = self.stack_machine.imm.pop()?,
+            0 => self.stack_machine.i_st0 = self.stack_machine.imm.pop()? as i32,
+            1 => self.stack_machine.i_st1 = self.stack_machine.imm.pop()? as i32,
+            2 => self.stack_machine.i_st2 = self.stack_machine.imm.pop()? as i32,
+            3 => self.stack_machine.i_st3 = self.stack_machine.imm.pop()? as i32,
             _ => panic!(),
         }
         Some(())
@@ -340,11 +348,11 @@ impl VM {
 
     pub fn increment_i(&mut self, idx: u8, c: u8) -> Option<()> {
         match idx {
-            0 => self.stack_machine.i_st0 += c as i8,
-            1 => self.stack_machine.i_st1 += c as i8,
-            2 => self.stack_machine.i_st2 += c as i8,
-            3 => self.stack_machine.i_st3 += c as i8,
-            _ => self.variables[idx as usize] += c,
+            0 => self.stack_machine.i_st0 += c as i32,
+            1 => self.stack_machine.i_st1 += c as i32,
+            2 => self.stack_machine.i_st2 += c as i32,
+            3 => self.stack_machine.i_st3 += c as i32,
+            _ => self.variables[idx as usize] += c as i64,
         }
         // println!("{:?}", self.variables);
         Some(())
@@ -373,9 +381,9 @@ impl VM {
         println!("insert_num : {}", insert_num);
         // 1 => self.stack_machine.a_st1[arr_idx as usize] = insert_num as i8,
         match store_idx {
-            1 => self.stack_machine.a_st1[arr_idx as usize] = insert_num as i8,
-            2 => self.stack_machine.a_st2[arr_idx as usize] = insert_num as i8,
-            3 => self.stack_machine.a_st3[arr_idx as usize] = insert_num as i8,
+            1 => self.stack_machine.a_st1[arr_idx as usize] = insert_num as i32,
+            2 => self.stack_machine.a_st2[arr_idx as usize] = insert_num as i32,
+            3 => self.stack_machine.a_st3[arr_idx as usize] = insert_num as i32,
             _ => self.hashes.get_mut(&store_idx).unwrap()[arr_idx as usize] = insert_num,
         }
 
@@ -383,8 +391,8 @@ impl VM {
     }
 }
 
-fn check_loop_base(idx: u8, v: &Vec<u8>) -> Option<u8> {
-    for i in 0..(v.len() as u8 - idx) {
+fn check_loop_base(idx: i32, v: &Vec<u8>) -> Option<i32> {
+    for i in 0..(v.len() as i32 - idx) {
         match v[idx as usize - i as usize] {
             21 | 27 | 28 | 29 => return Some(idx - i),
             _ => {}
@@ -406,6 +414,7 @@ mod Inst {
     pub const iconst_4: u8 = 7;
     pub const iconst_5: u8 = 8;
     pub const bipush: u8 = 16;
+    pub const pipush: u8 = 17;
     pub const iload: u8 = 21;
     pub const iload_0: u8 = 26;
     pub const iload_1: u8 = 27;
@@ -419,8 +428,8 @@ mod Inst {
     pub const istore_3: u8 = 62;
     pub const astore_1: u8 = 76;
     pub const astore_2: u8 = 77;
-    pub const astore_3: u8 = 78;
     pub const pop: u8 = 87;
+    pub const astore_3: u8 = 78;
     pub const iadd: u8 = 96;
     pub const irem: u8 = 112;
     pub const iinc: u8 = 132;
