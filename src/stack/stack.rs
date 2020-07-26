@@ -15,6 +15,8 @@ pub struct StackMachine {
     pub imm: Vec<i64>,
     pub op: Vec<i64>,
     pub imp_i: i32,
+    pub output_stream_st: Vec<String>,
+    pub class_stream_st: Vec<String>,
 }
 
 impl StackMachine {
@@ -35,6 +37,8 @@ impl StackMachine {
             imm: vec![],
             op: vec![],
             imp_i: 0,
+            output_stream_st: vec![],
+            class_stream_st: vec![],
         }
     }
 }

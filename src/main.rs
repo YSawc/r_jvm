@@ -13,4 +13,5 @@ fn test() {
     vm.run("FizzBuzz");
     vm.run("CreateBuffer");
     vm.run("Switch");
+    vm.run("HelloWorld");
 }

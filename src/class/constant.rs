@@ -108,6 +108,27 @@ impl Constant {
         }
     }
 
+    pub fn get_method_class_index_index(&self) -> Option<u16> {
+        match self {
+            Constant::MethodInfo { class_index, .. } => Some(*class_index),
+            e => unimplemented!("{:?}", e),
+        }
+    }
+
+    pub fn get_class_class_index_index(&self) -> Option<u16> {
+        match self {
+            Constant::ClassInfo { class_index, .. } => Some(*class_index),
+            e => unimplemented!("{:?}", e),
+        }
+    }
+
+    pub fn get_string_index(&self) -> Option<u16> {
+        match self {
+            Constant::StringInfo { string_index, .. } => Some(*string_index),
+            e => unimplemented!("{:?}", e),
+        }
+    }
+
     pub fn get_utf8(&self) -> Option<&String> {
         match self {
             Constant::Utf8Info { str, .. } => Some(str),

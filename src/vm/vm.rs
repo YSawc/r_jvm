@@ -1,3 +1,4 @@
+use super::super::api::llvm;
 use super::super::class::attribute::Attribute;
 use super::super::class::{class_file, class_parser};
 use super::super::gc::gc;
@@ -78,6 +79,41 @@ impl VM {
                         .imm
                         .push(((v[n + 1] * 255) as i64) + (v[n + 2] as i64 + 1));
                     n += 2;
+                }
+                Inst::ldc => {
+                    let method_class_index = self.topic_class.constant_pool
+                        [v[n + 1 as usize] as usize]
+                        .get_method_class_index_index()
+                        .unwrap();
+
+                    let class_class_index = self.topic_class.constant_pool
+                        [method_class_index as usize - 1]
+                        .get_class_class_index_index()
+                        .unwrap();
+                    let field_summary = self.topic_class.constant_pool
+                        [class_class_index as usize - 1]
+                        .get_utf8()
+                        .unwrap();
+
+                    let method_name_and_type_index = self.topic_class.constant_pool
+                        [v[n + 1 as usize] as usize]
+                        .get_method_name_and_type_index()
+                        .unwrap();
+                    let name_and_type_name_index = self.topic_class.constant_pool
+                        [method_name_and_type_index as usize - 1]
+                        .get_name_and_type_name_index()
+                        .unwrap();
+                    let detail_of_constructor = self.topic_class.constant_pool
+                        [name_and_type_name_index as usize - 1]
+                        .get_utf8()
+                        .unwrap();
+
+                    println!("{} : {}", field_summary, detail_of_constructor);
+                    self.stack_machine
+                        .class_stream_st
+                        .push(field_summary.to_owned() + ":" + detail_of_constructor);
+                    println!("stack_machine after read ldc : {:?}", self.stack_machine);
+                    n += 1;
                 }
                 Inst::iload => {
                     self.stack_machine
@@ -232,6 +268,22 @@ impl VM {
                     // println!("self.variables after read _return : {:?}", self.variables);
                     return Some(());
                 }
+                Inst::getstatic => {
+                    let name_and_type_index = self.topic_class.constant_pool
+                        [(v[n + 1] as usize >> 8) | v[n + 2] as usize]
+                        .get_string_index()
+                        .unwrap();
+                    let output = self.topic_class.constant_pool[name_and_type_index as usize - 1]
+                        .get_utf8()
+                        .unwrap();
+                    self.stack_machine.output_stream_st.push(output.clone());
+                    n += 2;
+                }
+                Inst::invoke_virtual => {
+                    // println!("{:?}", self.stack_machine);
+                    self.invoke_virtual();
+                    n += 2;
+                }
                 Inst::invoke_special => {
                     let idx = self.search_special_methods_index().unwrap();
                     n += 2;
@@ -379,7 +431,6 @@ impl VM {
         println!("store_idx : {}", store_idx);
         println!("arr_idx : {}", arr_idx);
         println!("insert_num : {}", insert_num);
-        // 1 => self.stack_machine.a_st1[arr_idx as usize] = insert_num as i8,
         match store_idx {
             1 => self.stack_machine.a_st1[arr_idx as usize] = insert_num as i32,
             2 => self.stack_machine.a_st2[arr_idx as usize] = insert_num as i32,
@@ -388,6 +439,15 @@ impl VM {
         }
 
         Some(())
+    }
+
+    pub fn invoke_virtual(&mut self) {
+        match self.stack_machine.class_stream_st.pop().unwrap().as_str() {
+            "java/io/PrintStream:println" => {
+                llvm::inkwell::println(self.stack_machine.output_stream_st.pop().unwrap())
+            }
+            _ => unimplemented!(),
+        }
     }
 }
 
@@ -415,6 +475,7 @@ mod Inst {
     pub const iconst_5: u8 = 8;
     pub const bipush: u8 = 16;
     pub const pipush: u8 = 17;
+    pub const ldc: u8 = 18;
     pub const iload: u8 = 21;
     pub const iload_0: u8 = 26;
     pub const iload_1: u8 = 27;
@@ -442,6 +503,7 @@ mod Inst {
     pub const lookupswitch: u8 = 171;
     pub const ireturn: u8 = 172;
     pub const _return: u8 = 177;
+    pub const getstatic: u8 = 178;
     pub const invoke_virtual: u8 = 182;
     pub const invoke_special: u8 = 183;
     pub const invoke_static: u8 = 184;
