@@ -88,7 +88,10 @@ jobs:
       - restore_cache_
       - run:
           name: build & test
-          command: RUST_BACKTRACE=1 cargo test --verbose --all -- --nocapture
+          command: |
+            sudo apt install clang-6.0 llvm-6.0 llvm-6.0-dev opt libedit-dev build-essential make -y
+            export LLVM_SYS_60_PREFIX=/usr/lib/llvm-6.0
+            RUST_BACKTRACE=1 cargo test --verbose --all -- --nocapture
       - save_cache_
 
 workflows:
@@ -98,7 +101,4 @@ workflows:
       # - readme
       # - lint
       - test:
-          name: MSRV (Minimum Supported Rust Version)
-          rust_version: 1.40.0
-      - test:
-          name: Rust Version from `rust-toolchain`
+          name: cargo test
