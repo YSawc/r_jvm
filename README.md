@@ -12,7 +12,7 @@ This project construct with reference of [Java SE8 Edition](https://docs.oracle.
 ```sh
 # e.g. Ubuntu
 apt-get install llvm-6.0
-ln -s /usr/bin/llvm-config-6.0 /usr/bin/llvm-config;
+ln -s /usr/bin/llvm-config-6.0 /usr/bin/llvm-config
 ```
 
 ##### Test

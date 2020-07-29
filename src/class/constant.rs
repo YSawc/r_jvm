@@ -91,9 +91,40 @@ pub enum Constant {
 }
 
 impl Constant {
+    pub fn get_name_and_type_indexes(&self) -> Option<(u16, u16)> {
+        match self {
+            Constant::NameAndtypeInfo {
+                name_index,
+                descriptor_index,
+            } => Some((*name_index, *descriptor_index)),
+            e => unimplemented!("{:?}", e),
+        }
+    }
+
     pub fn get_name_and_type_name_index(&self) -> Option<u16> {
         match self {
             Constant::NameAndtypeInfo { name_index, .. } => Some(*name_index),
+            e => unimplemented!("{:?}", e),
+        }
+    }
+
+    pub fn get_field_ref_indexes(&self) -> Option<(u16, u16)> {
+        match self {
+            Constant::FieldrefInfo {
+                class_index,
+                name_and_type_index,
+            } => Some((*class_index, *name_and_type_index)),
+            e => unimplemented!("{:?}", e),
+        }
+    }
+
+    pub fn get_method_indexes(&self) -> Option<(u16, u16)> {
+        match self {
+            Constant::MethodInfo {
+                class_index,
+                name_and_type_index,
+                ..
+            } => Some((*class_index, *name_and_type_index)),
             e => unimplemented!("{:?}", e),
         }
     }

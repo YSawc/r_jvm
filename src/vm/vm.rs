@@ -81,38 +81,14 @@ impl VM {
                     n += 2;
                 }
                 Inst::ldc => {
-                    let method_class_index = self.topic_class.constant_pool
-                        [v[n + 1 as usize] as usize]
-                        .get_method_class_index_index()
+                    let string_index = self.topic_class.constant_pool[v[n + 1] as usize - 1]
+                        .get_string_index()
                         .unwrap();
-
-                    let class_class_index = self.topic_class.constant_pool
-                        [method_class_index as usize - 1]
-                        .get_class_class_index_index()
-                        .unwrap();
-                    let field_summary = self.topic_class.constant_pool
-                        [class_class_index as usize - 1]
+                    let output = self.topic_class.constant_pool[string_index as usize - 1]
                         .get_utf8()
                         .unwrap();
-
-                    let method_name_and_type_index = self.topic_class.constant_pool
-                        [v[n + 1 as usize] as usize]
-                        .get_method_name_and_type_index()
-                        .unwrap();
-                    let name_and_type_name_index = self.topic_class.constant_pool
-                        [method_name_and_type_index as usize - 1]
-                        .get_name_and_type_name_index()
-                        .unwrap();
-                    let detail_of_constructor = self.topic_class.constant_pool
-                        [name_and_type_name_index as usize - 1]
-                        .get_utf8()
-                        .unwrap();
-
-                    println!("{} : {}", field_summary, detail_of_constructor);
-                    self.stack_machine
-                        .class_stream_st
-                        .push(field_summary.to_owned() + ":" + detail_of_constructor);
-                    println!("stack_machine after read ldc : {:?}", self.stack_machine);
+                    self.stack_machine.output_stream_st.push(output.clone());
+                    println!("{:?}", self.stack_machine);
                     n += 1;
                 }
                 Inst::iload => {
@@ -269,18 +245,44 @@ impl VM {
                     return Some(());
                 }
                 Inst::getstatic => {
-                    let name_and_type_index = self.topic_class.constant_pool
-                        [(v[n + 1] as usize >> 8) | v[n + 2] as usize]
-                        .get_string_index()
-                        .unwrap();
-                    let output = self.topic_class.constant_pool[name_and_type_index as usize - 1]
-                        .get_utf8()
-                        .unwrap();
-                    self.stack_machine.output_stream_st.push(output.clone());
+                    let field_ref_info_index = (v[n + 1] as usize >> 8) | v[n + 2] as usize;
+                    self.get_field_info(field_ref_info_index);
                     n += 2;
                 }
                 Inst::invoke_virtual => {
-                    // println!("{:?}", self.stack_machine);
+                    println!("{:?}", self.topic_class.constant_pool);
+
+                    let (method_class_index, method_name_and_type_index) = self
+                        .topic_class
+                        .constant_pool[(v[n + 1] as usize >> 8) | v[n + 2] as usize - 1]
+                        .get_method_indexes()
+                        .unwrap();
+
+                    println!("method_class_index {}", method_name_and_type_index);
+                    let class_class_index = self.topic_class.constant_pool
+                        [method_class_index as usize - 1]
+                        .get_class_class_index_index()
+                        .unwrap();
+                    let field_summary = self.topic_class.constant_pool
+                        [class_class_index as usize - 1]
+                        .get_utf8()
+                        .unwrap();
+
+                    let name_and_type_name_index = self.topic_class.constant_pool
+                        [method_name_and_type_index as usize - 1]
+                        .get_name_and_type_name_index()
+                        .unwrap();
+                    let detail_of_constructor = self.topic_class.constant_pool
+                        [name_and_type_name_index as usize - 1]
+                        .get_utf8()
+                        .unwrap()
+                        .clone();
+
+                    println!("{} : {}", field_summary, detail_of_constructor);
+                    self.stack_machine
+                        .class_stream_st
+                        .push(field_summary.to_owned() + ":" + &detail_of_constructor);
+
                     self.invoke_virtual();
                     n += 2;
                 }
@@ -449,6 +451,32 @@ impl VM {
             _ => unimplemented!(),
         }
     }
+
+    pub fn get_field_info(&mut self, u: usize) {
+        let (class_index, name_and_type_index) = self.topic_class.constant_pool[u as usize - 1]
+            .get_field_ref_indexes()
+            .unwrap();
+
+        let class_index2 = self.topic_class.constant_pool[class_index as usize - 1]
+            .get_class_class_index_index()
+            .unwrap();
+        let base_class = self.topic_class.constant_pool[class_index2 as usize - 1]
+            .get_utf8()
+            .unwrap();
+
+        let (name_index, name_and_type_name_index) = self.topic_class.constant_pool
+            [name_and_type_index as usize - 1]
+            .get_name_and_type_indexes()
+            .unwrap();
+        let stream = self.topic_class.constant_pool[name_index as usize - 1]
+            .get_utf8()
+            .unwrap();
+        let field_class = self.topic_class.constant_pool[name_and_type_name_index as usize - 1]
+            .get_utf8()
+            .unwrap();
+
+        println!("{}.{}:{}", base_class, stream, field_class);
+    }
 }
 
 fn check_loop_base(idx: i32, v: &Vec<u8>) -> Option<i32> {
@@ -486,10 +514,10 @@ mod Inst {
     pub const istore_0: u8 = 59;
     pub const istore_1: u8 = 60;
     pub const istore_2: u8 = 61;
+    pub const pop: u8 = 87;
     pub const istore_3: u8 = 62;
     pub const astore_1: u8 = 76;
     pub const astore_2: u8 = 77;
-    pub const pop: u8 = 87;
     pub const astore_3: u8 = 78;
     pub const iadd: u8 = 96;
     pub const irem: u8 = 112;
