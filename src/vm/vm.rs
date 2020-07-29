@@ -88,7 +88,7 @@ impl VM {
                         .get_utf8()
                         .unwrap();
                     self.stack_machine.output_stream_st.push(output.clone());
-                    println!("{:?}", self.stack_machine);
+                    // println!("{:?}", self.stack_machine);
                     n += 1;
                 }
                 Inst::iload => {
@@ -150,10 +150,10 @@ impl VM {
                 }
                 Inst::iinc => {
                     self.increment_i(v[n + 1], v[n + 2]);
-                    println!(
-                        "self.stack_machine after read iinc : {:?}",
-                        self.stack_machine
-                    );
+                    // println!(
+                    //     "self.stack_machine after read iinc : {:?}",
+                    //     self.stack_machine
+                    // );
                     n += 2;
                 }
                 Inst::ifeq => {
@@ -250,7 +250,7 @@ impl VM {
                     n += 2;
                 }
                 Inst::invoke_virtual => {
-                    println!("{:?}", self.topic_class.constant_pool);
+                    // println!("{:?}", self.topic_class.constant_pool);
 
                     let (method_class_index, method_name_and_type_index) = self
                         .topic_class
@@ -258,7 +258,6 @@ impl VM {
                         .get_method_indexes()
                         .unwrap();
 
-                    println!("method_class_index {}", method_name_and_type_index);
                     let class_class_index = self.topic_class.constant_pool
                         [method_class_index as usize - 1]
                         .get_class_class_index_index()
@@ -430,9 +429,9 @@ impl VM {
     }
 
     pub fn astore(&mut self, store_idx: u8, arr_idx: u8, insert_num: u8) -> Option<()> {
-        println!("store_idx : {}", store_idx);
-        println!("arr_idx : {}", arr_idx);
-        println!("insert_num : {}", insert_num);
+        // println!("store_idx : {}", store_idx);
+        // println!("arr_idx : {}", arr_idx);
+        // println!("insert_num : {}", insert_num);
         match store_idx {
             1 => self.stack_machine.a_st1[arr_idx as usize] = insert_num as i32,
             2 => self.stack_machine.a_st2[arr_idx as usize] = insert_num as i32,
