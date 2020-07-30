@@ -136,6 +136,7 @@ impl VM {
                     .stack_machine
                     .imm
                     .push(self.stack_machine.op.pop()? as i64),
+                Inst::new => n += 2,
                 Inst::iadd => {
                     let ri = self.stack_machine.imm.pop()?;
                     let li = self.stack_machine.imm.pop()?;
@@ -260,29 +261,34 @@ impl VM {
 
                     let class_class_index = self.topic_class.constant_pool
                         [method_class_index as usize - 1]
-                        .get_class_class_index_index()
+                        .get_class_class_index()
                         .unwrap();
                     let field_summary = self.topic_class.constant_pool
                         [class_class_index as usize - 1]
                         .get_utf8()
                         .unwrap();
 
-                    let name_and_type_name_index = self.topic_class.constant_pool
+                    let (name_index, descriptor_index) = self.topic_class.constant_pool
                         [method_name_and_type_index as usize - 1]
-                        .get_name_and_type_name_index()
+                        .get_name_and_type_indexes()
                         .unwrap();
                     let detail_of_constructor = self.topic_class.constant_pool
-                        [name_and_type_name_index as usize - 1]
+                        [name_index as usize - 1]
+                        .get_utf8()
+                        .unwrap()
+                        .clone();
+                    let types_info = self.topic_class.constant_pool[descriptor_index as usize - 1]
                         .get_utf8()
                         .unwrap()
                         .clone();
 
-                    println!("{} : {}", field_summary, detail_of_constructor);
+                    println!("{}.{}:{}", field_summary, detail_of_constructor, types_info);
+
                     self.stack_machine
                         .class_stream_st
                         .push(field_summary.to_owned() + ":" + &detail_of_constructor);
 
-                    self.invoke_virtual();
+                    self.invoke_virtual(types_info);
                     n += 2;
                 }
                 Inst::invoke_special => {
@@ -297,6 +303,7 @@ impl VM {
                     n += 2;
                     self.read_idx_code(idx).unwrap();
                 }
+                Inst::dup => n += 2,
                 Inst::newarray => {
                     let arr_count = self.hashes.get_mut(&255).unwrap()[0];
                     self.new_array(arr_count);
@@ -442,12 +449,16 @@ impl VM {
         Some(())
     }
 
-    pub fn invoke_virtual(&mut self) {
+    pub fn invoke_virtual(&mut self, str: String) {
         match self.stack_machine.class_stream_st.pop().unwrap().as_str() {
-            "java/io/PrintStream:println" => {
-                llvm::inkwell::println(self.stack_machine.output_stream_st.pop().unwrap())
-            }
-            _ => unimplemented!(),
+            "java/io/PrintStream:println" => match &*str {
+                "(Ljava/lang/String;)V" => {
+                    llvm::inkwell::println(self.stack_machine.output_stream_st.pop().unwrap())
+                }
+                _ => unimplemented!(),
+            },
+            "java/lang/StringBuilder:append" => {}
+            e => unimplemented!("{}", e),
         }
     }
 
@@ -457,7 +468,7 @@ impl VM {
             .unwrap();
 
         let class_index2 = self.topic_class.constant_pool[class_index as usize - 1]
-            .get_class_class_index_index()
+            .get_class_class_index()
             .unwrap();
         let base_class = self.topic_class.constant_pool[class_index2 as usize - 1]
             .get_utf8()
@@ -514,6 +525,7 @@ mod Inst {
     pub const istore_1: u8 = 60;
     pub const istore_2: u8 = 61;
     pub const pop: u8 = 87;
+    pub const dup: u8 = 89;
     pub const istore_3: u8 = 62;
     pub const astore_1: u8 = 76;
     pub const astore_2: u8 = 77;
@@ -534,5 +546,6 @@ mod Inst {
     pub const invoke_virtual: u8 = 182;
     pub const invoke_special: u8 = 183;
     pub const invoke_static: u8 = 184;
+    pub const new: u8 = 187;
     pub const newarray: u8 = 188;
 }

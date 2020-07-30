@@ -146,7 +146,7 @@ impl Constant {
         }
     }
 
-    pub fn get_class_class_index_index(&self) -> Option<u16> {
+    pub fn get_class_class_index(&self) -> Option<u16> {
         match self {
             Constant::ClassInfo { class_index, .. } => Some(*class_index),
             e => unimplemented!("{:?}", e),
