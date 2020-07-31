@@ -450,10 +450,22 @@ impl VM {
     }
 
     pub fn invoke_virtual(&mut self, str: String) {
+        println!("{:?}", self.stack_machine);
         match self.stack_machine.class_stream_st.pop().unwrap().as_str() {
             "java/io/PrintStream:println" => match &*str {
                 "(Ljava/lang/String;)V" => {
-                    llvm::inkwell::println(self.stack_machine.output_stream_st.pop().unwrap())
+                    llvm::inkwell::println_str(self.stack_machine.output_stream_st.pop().unwrap())
+                }
+                "(I)V" => {
+                    let v = self.stack_machine.imm.pop().unwrap();
+                    let mut a: Vec<i64> = vec![];
+                    let mut c: i64 = 1;
+                    while v / c > 0 {
+                        a.push(v / c);
+                        c *= 10;
+                    }
+                    a.reverse();
+                    llvm::inkwell::println_int(a);
                 }
                 _ => unimplemented!(),
             },

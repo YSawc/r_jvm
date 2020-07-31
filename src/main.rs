@@ -14,4 +14,5 @@ fn test() {
     vm.run("CreateBuffer");
     vm.run("Switch");
     vm.run("HelloWorld");
+    vm.run("StringBuilder");
 }
