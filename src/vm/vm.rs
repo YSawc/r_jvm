@@ -73,7 +73,7 @@ impl VM {
                     n += 1;
                     self.stack_machine.imm.push(v[n] as i64);
                 }
-                Inst::pipush => {
+                Inst::sipush => {
                     println!("{:?}", self.stack_machine);
                     self.stack_machine
                         .imm
@@ -454,18 +454,11 @@ impl VM {
         match self.stack_machine.class_stream_st.pop().unwrap().as_str() {
             "java/io/PrintStream:println" => match &*str {
                 "(Ljava/lang/String;)V" => {
-                    llvm::inkwell::println_str(self.stack_machine.output_stream_st.pop().unwrap())
+                    llvm::inkwell::println(self.stack_machine.output_stream_st.pop().unwrap())
                 }
                 "(I)V" => {
-                    let v = self.stack_machine.imm.pop().unwrap();
-                    let mut a: Vec<i64> = vec![];
-                    let mut c: i64 = 1;
-                    while v / c > 0 {
-                        a.push(v / c);
-                        c *= 10;
-                    }
-                    a.reverse();
-                    llvm::inkwell::println_int(a);
+                    let n = self.stack_machine.imm.pop().unwrap();
+                    llvm::inkwell::println(n.to_string());
                 }
                 _ => unimplemented!(),
             },
@@ -524,7 +517,7 @@ mod Inst {
     pub const iconst_4: u8 = 7;
     pub const iconst_5: u8 = 8;
     pub const bipush: u8 = 16;
-    pub const pipush: u8 = 17;
+    pub const sipush: u8 = 17;
     pub const ldc: u8 = 18;
     pub const iload: u8 = 21;
     pub const iload_0: u8 = 26;
