@@ -36,5 +36,7 @@ pub fn println(str: String) {
 
     Command::new("rm").args(&["-rf", "a.ll"]).output().unwrap();
 
+    println!("--- Standard Output ---");
     println!("{}", String::from_utf8_lossy(&output.stdout));
+    println!("-----------------------");
 }

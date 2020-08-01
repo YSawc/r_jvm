@@ -29,9 +29,11 @@ impl VM {
 impl VM {
     pub fn run(&mut self, class_name: &str) -> () {
         let file_path = format!("java/{}.class", class_name);
+        println!("");
         println!("========================================");
         println!("reading .. {}.", file_path);
         println!("========================================");
+        println!("");
 
         let mut reader = match class_parser::ClassFileReader::new(&file_path) {
             Some(reader) => reader,
@@ -74,7 +76,7 @@ impl VM {
                     self.stack_machine.imm.push(v[n] as i64);
                 }
                 Inst::sipush => {
-                    println!("{:?}", self.stack_machine);
+                    // println!("{:?}", self.stack_machine);
                     self.stack_machine
                         .imm
                         .push(((v[n + 1] * 255) as i64) + (v[n + 2] as i64 + 1));
@@ -230,19 +232,15 @@ impl VM {
                 Inst::ireturn => {
                     let ret_i = self.stack_machine.imm.pop().unwrap();
                     self.stack_machine.op.push(ret_i);
-                    println!(
-                        "self.stack_machine after read ireturn : {:?}",
-                        self.stack_machine
-                    );
-                    // println!("self.variables after read ireturn : {:?}", self.variables);
+                    println!("--- self.stack_machine after read ireturn ---");
+                    println!("{:?}", self.stack_machine);
+                    println!("---------------------------------------------");
                     return Some(());
                 }
                 Inst::_return => {
-                    println!(
-                        "self.stack_machine after read _return : {:?}",
-                        self.stack_machine
-                    );
-                    // println!("self.variables after read _return : {:?}", self.variables);
+                    println!("--- self.stack_machine after read ireturn ---");
+                    println!("{:?}", self.stack_machine);
+                    println!("---------------------------------------------");
                     return Some(());
                 }
                 Inst::getstatic => {
@@ -282,7 +280,7 @@ impl VM {
                         .unwrap()
                         .clone();
 
-                    println!("{}.{}:{}", field_summary, detail_of_constructor, types_info);
+                    // println!("{}.{}:{}", field_summary, detail_of_constructor, types_info);
 
                     self.stack_machine
                         .class_stream_st
@@ -307,7 +305,7 @@ impl VM {
                 Inst::newarray => {
                     let arr_count = self.hashes.get_mut(&255).unwrap()[0];
                     self.new_array(arr_count);
-                    println!("stackmachine read after newarray {:?}", self.stack_machine);
+                    // println!("stackmachine read after newarray {:?}", self.stack_machine);
                     println!("hashes read after newarray{:?}", self.hashes);
                     n += 1;
                 }
@@ -320,6 +318,7 @@ impl VM {
 
     pub fn parse_args_and_return_value(&mut self, idx: u8) -> Option<()> {
         let topic_class = self.topic_class.clone();
+        // println!("{:?}", topic_class.constant_pool[idx as usize]);
         let method_name_and_type_index = topic_class.constant_pool[idx as usize]
             .get_method_name_and_type_index()
             .unwrap();
@@ -450,7 +449,7 @@ impl VM {
     }
 
     pub fn invoke_virtual(&mut self, str: String) {
-        println!("{:?}", self.stack_machine);
+        // println!("{:?}", self.stack_machine);
         match self.stack_machine.class_stream_st.pop().unwrap().as_str() {
             "java/io/PrintStream:println" => match &*str {
                 "(Ljava/lang/String;)V" => {
