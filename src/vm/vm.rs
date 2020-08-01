@@ -460,9 +460,19 @@ impl VM {
                     let n = self.stack_machine.imm.pop().unwrap();
                     llvm::inkwell::println(n.to_string());
                 }
-                _ => unimplemented!(),
+                e => unimplemented!("{}", e),
             },
-            "java/lang/StringBuilder:append" => {}
+            "java/lang/StringBuilder:append" => match &*str {
+                "(I)Ljava/lang/StringBuilder;" => {
+                    let l = self.stack_machine.output_stream_st.pop().unwrap();
+                    let r = self.stack_machine.imm.pop().unwrap();
+                    let b = format!("{}{}", l, r);
+                    self.stack_machine.output_stream_st.push(b);
+                }
+                "(Ljava/lang/String;)Ljava/lang/StringBuilder;" => {}
+                e => unimplemented!("{}", e),
+            },
+            "java/lang/StringBuilder:toString" => {}
             e => unimplemented!("{}", e),
         }
     }
