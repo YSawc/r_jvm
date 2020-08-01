@@ -502,15 +502,25 @@ impl VM {
             },
             "java/lang/StringBuilder:append" => match &*str {
                 "(I)Ljava/lang/StringBuilder;" => {
-                    let l = self.stack_machine.output_stream_st.pop().unwrap();
-                    let r = self.stack_machine.imm.pop().unwrap();
-                    let b = format!("{}{}", l, r);
-                    self.stack_machine.output_stream_st.push(b);
+                    let i = self.stack_machine.imm.pop().unwrap();
+                    let f = format!("{}", i);
+                    self.stack_machine.output_stream_st.push(f);
                 }
-                "(Ljava/lang/String;)Ljava/lang/StringBuilder;" => {}
+                "(Ljava/lang/String;)Ljava/lang/StringBuilder;" => {
+                    let s = self.stack_machine.output_stream_st.pop().unwrap();
+                    let f = format!("{}", s);
+                    self.stack_machine.output_stream_st.push(f);
+                }
                 e => unimplemented!("{}", e),
             },
-            "java/lang/StringBuilder:toString" => {}
+            "java/lang/StringBuilder:toString" => {
+                for _ in 0..self.stack_machine.output_stream_st.len() - 1 {
+                    let l = self.stack_machine.output_stream_st.pop().unwrap();
+                    let r = self.stack_machine.output_stream_st.pop().unwrap();
+                    let b = format!("{}{}", r, l);
+                    self.stack_machine.output_stream_st.push(b);
+                }
+            }
             e => unimplemented!("{}", e),
         }
     }
