@@ -318,17 +318,35 @@ impl VM {
 
     pub fn parse_args_and_return_value(&mut self, idx: u8) -> Option<()> {
         let topic_class = self.topic_class.clone();
-        // println!("{:?}", topic_class.constant_pool[idx as usize]);
-        let method_name_and_type_index = topic_class.constant_pool[idx as usize]
-            .get_method_name_and_type_index()
+        let (class_index, name_and_type_index) = topic_class.constant_pool[idx as usize]
+            .get_method_indexes()
             .unwrap();
-        let descriptor_index = topic_class.constant_pool[method_name_and_type_index as usize]
-            .get_name_and_type_name_index()
+
+        let class_index2 = topic_class.constant_pool[class_index as usize - 1]
+            .get_class_class_index()
             .unwrap();
-        let type_info = topic_class.constant_pool[descriptor_index as usize]
+
+        let (name_index, descriptor_index) = topic_class.constant_pool
+            [name_and_type_index as usize - 1]
+            .get_name_and_type_indexes()
+            .unwrap();
+
+        println!(
+            "invoke_static method : {}.{:?}:{}",
+            topic_class.constant_pool[class_index2 as usize - 1]
+                .get_utf8()
+                .unwrap(),
+            topic_class.constant_pool[name_index as usize - 1]
+                .get_utf8()
+                .unwrap(),
+            topic_class.constant_pool[descriptor_index as usize - 1]
+                .get_utf8()
+                .unwrap(),
+        );
+
+        let type_info = topic_class.constant_pool[name_index as usize - 1]
             .get_utf8()
             .unwrap();
-        println!("type_info : {}", type_info);
 
         self.parse_args(type_info);
         Some(())
@@ -339,7 +357,7 @@ impl VM {
             match str.as_bytes()[n] as char {
                 '(' => {}
                 'I' => self.push_to_i_st(n as u8 - 1).unwrap(),
-                ')' => return Some(()),
+                ')' | '<' => return Some(()),
                 e => unimplemented!("{}", e),
             }
         }
@@ -371,15 +389,36 @@ impl VM {
     }
 
     pub fn search_invoke_static_index(&mut self, idx: u8) -> Option<u8> {
-        let name_and_type_index = self.topic_class.constant_pool[idx as usize]
-            .get_method_name_and_type_index()
-            .unwrap();
-        let name_index = self.topic_class.constant_pool[name_and_type_index as usize]
-            .get_name_and_type_name_index()
+        let topic_class = self.topic_class.clone();
+
+        let (class_index, name_and_type_index) = topic_class.constant_pool[idx as usize]
+            .get_method_indexes()
             .unwrap();
 
-        for n in 0..=self.topic_class.attributes_count as u8 {
-            if self.topic_class.methods[n as usize].name_index == name_index {
+        let class_index2 = topic_class.constant_pool[class_index as usize - 1]
+            .get_class_class_index()
+            .unwrap();
+
+        let (name_index, descriptor_index) = topic_class.constant_pool
+            [name_and_type_index as usize]
+            .get_name_and_type_indexes()
+            .unwrap();
+
+        println!(
+            "invoke_static method : {}.{:?}:{}",
+            topic_class.constant_pool[class_index2 as usize - 1]
+                .get_utf8()
+                .unwrap(),
+            topic_class.constant_pool[name_index as usize - 1]
+                .get_utf8()
+                .unwrap(),
+            topic_class.constant_pool[descriptor_index as usize - 1]
+                .get_utf8()
+                .unwrap(),
+        );
+
+        for n in 0..=topic_class.attributes_count as u8 {
+            if topic_class.methods[n as usize].name_index == name_index {
                 return Some(n as u8);
             }
         }
