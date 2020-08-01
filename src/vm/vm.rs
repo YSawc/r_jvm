@@ -296,8 +296,9 @@ impl VM {
                 }
                 Inst::invoke_static => {
                     let idx = self.search_invoke_static_index((v[n + 1]) as u8).unwrap();
-
-                    self.parse_args_and_return_value(v[n + 1]);
+                    self.parse_args_and_return_value(
+                        (v[n + 1] as usize >> 8) | v[n + 2] as usize - 1,
+                    );
                     n += 2;
                     self.read_idx_code(idx).unwrap();
                 }
@@ -316,7 +317,7 @@ impl VM {
         None
     }
 
-    pub fn parse_args_and_return_value(&mut self, idx: u8) -> Option<()> {
+    pub fn parse_args_and_return_value(&mut self, idx: usize) -> Option<()> {
         let topic_class = self.topic_class.clone();
         let (class_index, name_and_type_index) = topic_class.constant_pool[idx as usize]
             .get_method_indexes()
@@ -344,7 +345,7 @@ impl VM {
                 .unwrap(),
         );
 
-        let type_info = topic_class.constant_pool[name_index as usize - 1]
+        let type_info = topic_class.constant_pool[descriptor_index as usize - 1]
             .get_utf8()
             .unwrap();
 
@@ -395,27 +396,14 @@ impl VM {
             .get_method_indexes()
             .unwrap();
 
-        let class_index2 = topic_class.constant_pool[class_index as usize - 1]
+        let _class_index2 = topic_class.constant_pool[class_index as usize - 1]
             .get_class_class_index()
             .unwrap();
 
-        let (name_index, descriptor_index) = topic_class.constant_pool
+        let (name_index, _descriptor_index) = topic_class.constant_pool
             [name_and_type_index as usize]
             .get_name_and_type_indexes()
             .unwrap();
-
-        println!(
-            "invoke_static method : {}.{:?}:{}",
-            topic_class.constant_pool[class_index2 as usize - 1]
-                .get_utf8()
-                .unwrap(),
-            topic_class.constant_pool[name_index as usize - 1]
-                .get_utf8()
-                .unwrap(),
-            topic_class.constant_pool[descriptor_index as usize - 1]
-                .get_utf8()
-                .unwrap(),
-        );
 
         for n in 0..=topic_class.attributes_count as u8 {
             if topic_class.methods[n as usize].name_index == name_index {
