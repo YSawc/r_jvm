@@ -3,6 +3,7 @@ class CallAdd {
     return a + b;
   }
   public static void main(String[] args) {
-    add(1, 2);
+    int r = add(1, 2);
+    System.out.println("r : " + r);
   }
 }

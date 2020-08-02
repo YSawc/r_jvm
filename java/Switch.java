@@ -10,7 +10,10 @@ class Switch {
   }
 
   public static void main(String[] args) {
-    mySwitch(257);
-    mySwitch(100);
+    int r1 = mySwitch(100);
+    int r2 = mySwitch(257);
+
+    System.out.println("r1 : " + r1);
+    System.out.println("r2 : " + r2);
   }
 }

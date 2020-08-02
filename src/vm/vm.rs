@@ -31,7 +31,7 @@ impl VM {
         let file_path = format!("java/{}.class", class_name);
         println!("");
         println!("========================================");
-        println!("reading .. {}.", file_path);
+        println!("{}.", file_path);
         println!("========================================");
         println!("");
 
@@ -63,7 +63,6 @@ impl VM {
 
     pub fn read_ope_code(&mut self, v: &Vec<u8>) -> Option<()> {
         let mut n = 0;
-        // println!("v.len() : {}", v.len());
         while n < v.len() {
             // println!("v[{}] : {}", n, v[n]);
             match v[n] {
@@ -107,10 +106,10 @@ impl VM {
                 Inst::istore => {
                     self.variables[v[n + 1] as usize] =
                         self.stack_machine.imm.pop().unwrap() as i64;
-                    println!(
-                        "self.variables[v[n + 1] as usize] : {}",
-                        self.variables[v[n + 1] as usize]
-                    );
+                    // println!(
+                    //     "self.variables[v[n + 1] as usize] : {}",
+                    //     self.variables[v[n + 1] as usize]
+                    // );
                     n += 1;
                 }
                 Inst::istore_1 => self.stack_machine.i_st1 = self.stack_machine.imm.pop()? as i32,
@@ -183,20 +182,18 @@ impl VM {
                         n += 2;
                     }
                 }
-                Inst::if_cmpge => {
+                Inst::if_icmpge => {
                     self.stack_machine.imp_i = check_loop_base(n as i32, v).unwrap() as i32;
                     if self.stack_machine.imm.pop() <= self.stack_machine.imm.pop() {
-                        n = v[n + (v[n as usize + 1] as usize >> 8) + v[n as usize + 2] as usize]
-                            as usize;
+                        n += (v[n as usize + 1] as usize >> 8) | v[n as usize + 2] as usize - 1;
                     } else {
                         n += 2;
                     }
                 }
-                Inst::if_cmpgt => {
+                Inst::if_icmpgt => {
                     self.stack_machine.imp_i = check_loop_base(n as i32, v).unwrap();
                     if self.stack_machine.imm.pop() < self.stack_machine.imm.pop() {
-                        n = v[n + (v[n as usize + 1] as usize >> 8) + v[n as usize + 2] as usize]
-                            as usize;
+                        n += (v[n as usize + 1] as usize >> 8) | v[n as usize + 2] as usize - 1;
                     } else {
                         n += 2;
                     }
@@ -231,7 +228,7 @@ impl VM {
                 }
                 Inst::ireturn => {
                     let ret_i = self.stack_machine.imm.pop().unwrap();
-                    self.stack_machine.op.push(ret_i);
+                    self.stack_machine.imm.push(ret_i);
                     println!("--- self.stack_machine after read ireturn ---");
                     println!("{:?}", self.stack_machine);
                     println!("---------------------------------------------");
@@ -307,7 +304,7 @@ impl VM {
                     let arr_count = self.hashes.get_mut(&255).unwrap()[0];
                     self.new_array(arr_count);
                     // println!("stackmachine read after newarray {:?}", self.stack_machine);
-                    println!("hashes read after newarray{:?}", self.hashes);
+                    // println!("hashes read after newarray{:?}", self.hashes);
                     n += 1;
                 }
                 e => unimplemented!("{}", e),
@@ -440,7 +437,6 @@ impl VM {
             3 => self.stack_machine.i_st3 += c as i32,
             _ => self.variables[idx as usize] += c as i64,
         }
-        // println!("{:?}", self.variables);
         Some(())
     }
 
@@ -575,20 +571,20 @@ mod Inst {
     pub const istore_0: u8 = 59;
     pub const istore_1: u8 = 60;
     pub const istore_2: u8 = 61;
-    pub const pop: u8 = 87;
-    pub const dup: u8 = 89;
     pub const istore_3: u8 = 62;
     pub const astore_1: u8 = 76;
     pub const astore_2: u8 = 77;
     pub const astore_3: u8 = 78;
+    pub const pop: u8 = 87;
+    pub const dup: u8 = 89;
     pub const iadd: u8 = 96;
     pub const irem: u8 = 112;
     pub const iinc: u8 = 132;
     pub const ifeq: u8 = 153;
     pub const ifne: u8 = 154;
     pub const ifge: u8 = 156;
-    pub const if_cmpge: u8 = 162;
-    pub const if_cmpgt: u8 = 163;
+    pub const if_icmpge: u8 = 162;
+    pub const if_icmpgt: u8 = 163;
     pub const goto: u8 = 167;
     pub const lookupswitch: u8 = 171;
     pub const ireturn: u8 = 172;
