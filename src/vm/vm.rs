@@ -102,7 +102,21 @@ impl VM {
                 Inst::iload_1 => self.stack_machine.imm.push(self.stack_machine.i_st1 as i64),
                 Inst::iload_2 => self.stack_machine.imm.push(self.stack_machine.i_st2 as i64),
                 Inst::iload_3 => self.stack_machine.imm.push(self.stack_machine.i_st3 as i64),
-                Inst::aload_0 => {}
+                Inst::aload_0..=Inst::aload_3 => {
+                    self.stack_machine.imma = match v[n] as u8 {
+                        Inst::aload_0 => self.stack_machine.a_st0.clone(),
+                        Inst::aload_1 => self.stack_machine.a_st1.clone(),
+                        Inst::aload_2 => self.stack_machine.a_st2.clone(),
+                        Inst::aload_3 => self.stack_machine.a_st3.clone(),
+                        e => unimplemented!("{:?}", e),
+                    }
+                }
+                Inst::iaload => {
+                    let idx = self.stack_machine.imm.pop().unwrap() as usize;
+                    self.stack_machine
+                        .imm
+                        .push(self.stack_machine.imma[idx] as i64);
+                }
                 Inst::istore => {
                     self.variables[v[n + 1] as usize] =
                         self.stack_machine.imm.pop().unwrap() as i64;
@@ -116,7 +130,7 @@ impl VM {
                 Inst::istore_2 => self.stack_machine.i_st2 = self.stack_machine.imm.pop()? as i32,
                 Inst::istore_3 => self.stack_machine.i_st3 = self.stack_machine.imm.pop()? as i32,
                 Inst::astore_1..=Inst::astore_3 => {
-                    let store_idx = v[n] - 75;
+                    let store_idx = v[n + 1] - 42;
                     match v[n + 2] {
                         Inst::iconst_m1..=Inst::iconst_5 => {
                             let arr_idx = v[n + 3];
@@ -567,6 +581,10 @@ mod Inst {
     pub const iload_2: u8 = 28;
     pub const iload_3: u8 = 29;
     pub const aload_0: u8 = 42;
+    pub const aload_1: u8 = 43;
+    pub const aload_2: u8 = 44;
+    pub const aload_3: u8 = 45;
+    pub const iaload: u8 = 46;
     pub const istore: u8 = 54;
     pub const istore_0: u8 = 59;
     pub const istore_1: u8 = 60;
