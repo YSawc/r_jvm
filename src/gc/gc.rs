@@ -1,17 +1,17 @@
 use super::super::class::class_file::ClassFile;
-use std::collections::HashMap;
+use rustc_hash::FxHashMap;
 
 pub type GcType<T> = *mut T;
 
 #[derive(Debug, Clone)]
 pub struct ClassHeap {
-    pub class_map: HashMap<String, ClassFile>,
+    pub class_map: FxHashMap<String, ClassFile>,
 }
 
 impl ClassHeap {
     pub fn new() -> Self {
         ClassHeap {
-            class_map: HashMap::default(),
+            class_map: FxHashMap::default(),
         }
     }
 

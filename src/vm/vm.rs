@@ -3,7 +3,7 @@ use super::super::class::attribute::Attribute;
 use super::super::class::{class_file, class_parser};
 use super::super::gc::gc;
 use super::super::stack::stack;
-use std::collections::HashMap;
+use rustc_hash::FxHashMap;
 use std::vec::Vec;
 
 pub struct VM {
@@ -11,7 +11,7 @@ pub struct VM {
     gc: gc::ClassHeap,
     topic_class: class_file::ClassFile,
     variables: Vec<i64>,
-    hashes: HashMap<u8, Vec<u8>>,
+    hashes: FxHashMap<u8, Vec<u8>>,
 }
 
 impl VM {
@@ -21,7 +21,7 @@ impl VM {
             gc: gc::ClassHeap::new(),
             topic_class: class_file::ClassFile::new(),
             variables: vec![0; 255],
-            hashes: HashMap::default(),
+            hashes: FxHashMap::default(),
         }
     }
 }
@@ -102,15 +102,10 @@ impl VM {
                 Inst::iload_1 => self.stack_machine.imm.push(self.stack_machine.i_st1 as i64),
                 Inst::iload_2 => self.stack_machine.imm.push(self.stack_machine.i_st2 as i64),
                 Inst::iload_3 => self.stack_machine.imm.push(self.stack_machine.i_st3 as i64),
-                Inst::aload_0..=Inst::aload_3 => {
-                    self.stack_machine.imma = match v[n] as u8 {
-                        Inst::aload_0 => self.stack_machine.a_st0.clone(),
-                        Inst::aload_1 => self.stack_machine.a_st1.clone(),
-                        Inst::aload_2 => self.stack_machine.a_st2.clone(),
-                        Inst::aload_3 => self.stack_machine.a_st3.clone(),
-                        e => unimplemented!("{:?}", e),
-                    }
-                }
+                Inst::aload_0 => self.stack_machine.imma = self.stack_machine.a_st0.clone(),
+                Inst::aload_1 => self.stack_machine.imma = self.stack_machine.a_st1.clone(),
+                Inst::aload_2 => self.stack_machine.imma = self.stack_machine.a_st2.clone(),
+                Inst::aload_3 => self.stack_machine.imma = self.stack_machine.a_st3.clone(),
                 Inst::iaload => {
                     let idx = self.stack_machine.imm.pop().unwrap() as usize;
                     self.stack_machine
@@ -222,7 +217,7 @@ impl VM {
                         n += 1;
                     }
 
-                    let mut idx_hs: HashMap<u8, u8> = HashMap::default();
+                    let mut idx_hs: FxHashMap<u8, u8> = FxHashMap::default();
                     idx_hs.insert(255, v[n]);
                     n += 4;
                     let loop_c = v[n];
@@ -440,7 +435,7 @@ impl VM {
     }
 
     pub fn drop_hashes(&mut self) -> () {
-        self.hashes = HashMap::default();
+        self.hashes = FxHashMap::default();
     }
 
     pub fn increment_i(&mut self, idx: u8, c: u8) -> Option<()> {
