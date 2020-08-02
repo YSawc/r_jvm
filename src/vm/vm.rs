@@ -200,7 +200,7 @@ impl VM {
                 }
                 Inst::goto => match v[n as usize + 1] {
                     255 => n = self.stack_machine.imp_i as usize - 1,
-                    _ => n += (v[n as usize + 1] as usize >> 8) + v[n as usize + 2] as usize - 1,
+                    _ => n += (v[n as usize + 1] as usize >> 8) | v[n as usize + 2] as usize - 1,
                 },
                 Inst::lookupswitch => {
                     n += 1;

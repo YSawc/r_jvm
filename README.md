@@ -4,11 +4,11 @@
 [![](http://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 
 For learing jvm very thank to [ferrugo](https://github.com/maekawatoshiki/ferrugo).
-This project construct with reference of [Java SE8 Edition](https://docs.oracle.com/javase/specs/jvms/se8/html/index.html).
+This project construct with JVM8. llvm. Here is the reference [Java SE8 Edition](https://docs.oracle.com/javase/specs/jvms/se8/html/index.html).
 
 #### Dependencies
 
-- llvm6.0
+- llvm6.0 (optional for System.out.println. If not installed, works with built-in on rust.)
 ```sh
 # e.g. Ubuntu
 apt-get install llvm-6.0
