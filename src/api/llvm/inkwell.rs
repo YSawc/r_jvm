@@ -2,6 +2,16 @@ use inkwell::context::Context;
 use std::process::Command;
 
 pub fn println(str: String) {
+    match Command::new("llvm-config-6.0").output() {
+        Err(_) => {
+            println!("--- Standard Output ---");
+            println!("{}", str);
+            println!("-----------------------");
+            return;
+        }
+        _ => {}
+    }
+
     let context = Context::create();
     let module = context.create_module("main");
     let builder = context.create_builder();
