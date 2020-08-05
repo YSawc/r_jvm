@@ -10,8 +10,6 @@ pub struct VM {
     stack_machine: stack::StackMachine,
     gc: gc::ClassHeap,
     topic_class: class_file::ClassFile,
-    variables: Vec<i64>,
-    hashes: FxHashMap<u8, Vec<u8>>,
 }
 
 impl VM {
@@ -20,8 +18,6 @@ impl VM {
             stack_machine: stack::StackMachine::new(),
             gc: gc::ClassHeap::new(),
             topic_class: class_file::ClassFile::new(),
-            variables: vec![0; 255],
-            hashes: FxHashMap::default(),
         }
     }
 }
@@ -45,7 +41,7 @@ impl VM {
 
         self.gc.insert_class(class_name, reader.read().unwrap());
         self.topic_class = self.gc.get_class(class_name).unwrap().clone();
-        self.hashes.insert(255, vec![0]);
+        self.stack_machine.hashes.insert(255, vec![0]);
         self.read_idx_code(0);
         self.drop_machine();
         Some(());
@@ -95,7 +91,7 @@ impl VM {
                 Inst::iload => {
                     self.stack_machine
                         .imm
-                        .push(self.variables[v[n + 1] as usize] as i64);
+                        .push(self.stack_machine.variables[v[n + 1] as usize] as i64);
                     n += 1;
                 }
                 Inst::iload_0 => self.stack_machine.imm.push(self.stack_machine.i_st0 as i64),
@@ -113,7 +109,7 @@ impl VM {
                         .push(self.stack_machine.imma[idx] as i64);
                 }
                 Inst::istore => {
-                    self.variables[v[n + 1] as usize] =
+                    self.stack_machine.variables[v[n + 1] as usize] =
                         self.stack_machine.imm.pop().unwrap() as i64;
                     // println!(
                     //     "self.variables[v[n + 1] as usize] : {}",
@@ -140,7 +136,7 @@ impl VM {
                             n += 5;
                         }
                     }
-                    println!("{:?}", self.hashes);
+                    println!("{:?}", self.stack_machine.hashes);
                 }
                 Inst::pop => self
                     .stack_machine
@@ -310,7 +306,7 @@ impl VM {
                 }
                 Inst::dup => n += 2,
                 Inst::newarray => {
-                    let arr_count = self.hashes.get_mut(&255).unwrap()[0];
+                    let arr_count = self.stack_machine.hashes.get_mut(&255).unwrap()[0];
                     self.new_array(arr_count);
                     // println!("stackmachine read after newarray {:?}", self.stack_machine);
                     // println!("hashes read after newarray{:?}", self.hashes);
@@ -431,11 +427,11 @@ impl VM {
     }
 
     pub fn drop_variables(&mut self) -> () {
-        self.variables = vec![0; 255];
+        self.stack_machine.variables = vec![0; 255];
     }
 
     pub fn drop_hashes(&mut self) -> () {
-        self.hashes = FxHashMap::default();
+        self.stack_machine.hashes = FxHashMap::default();
     }
 
     pub fn increment_i(&mut self, idx: u8, c: u8) -> Option<()> {
@@ -444,19 +440,19 @@ impl VM {
             1 => self.stack_machine.i_st1 += c as i32,
             2 => self.stack_machine.i_st2 += c as i32,
             3 => self.stack_machine.i_st3 += c as i32,
-            _ => self.variables[idx as usize] += c as i64,
+            _ => self.stack_machine.variables[idx as usize] += c as i64,
         }
         Some(())
     }
 
     pub fn new_array(&mut self, arr_count: u8) -> Option<()> {
-        self.hashes.get_mut(&255).unwrap()[0] += 1;
+        self.stack_machine.hashes.get_mut(&255).unwrap()[0] += 1;
         match arr_count {
             0 => self.stack_machine.a_st1 = vec![0; self.stack_machine.imm.pop().unwrap() as usize],
             1 => self.stack_machine.a_st2 = vec![0; self.stack_machine.imm.pop().unwrap() as usize],
             2 => self.stack_machine.a_st3 = vec![0; self.stack_machine.imm.pop().unwrap() as usize],
             _ => {
-                self.hashes.insert(
+                self.stack_machine.hashes.insert(
                     arr_count,
                     vec![0; self.stack_machine.imm.pop().unwrap() as usize],
                 );
@@ -474,7 +470,10 @@ impl VM {
             1 => self.stack_machine.a_st1[arr_idx as usize] = insert_num as i32,
             2 => self.stack_machine.a_st2[arr_idx as usize] = insert_num as i32,
             3 => self.stack_machine.a_st3[arr_idx as usize] = insert_num as i32,
-            _ => self.hashes.get_mut(&store_idx).unwrap()[arr_idx as usize] = insert_num,
+            _ => {
+                self.stack_machine.hashes.get_mut(&store_idx).unwrap()[arr_idx as usize] =
+                    insert_num
+            }
         }
 
         Some(())

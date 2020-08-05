@@ -1,3 +1,5 @@
+use rustc_hash::FxHashMap;
+
 #[derive(Debug)]
 pub struct StackMachine {
     pub i_st0: i32,
@@ -16,6 +18,8 @@ pub struct StackMachine {
     pub imma: Vec<i32>,
     pub op: Vec<i64>,
     pub imp_i: i32,
+    pub variables: Vec<i64>,
+    pub hashes: FxHashMap<u8, Vec<u8>>,
     pub output_stream_st: Vec<String>,
     pub class_stream_st: Vec<String>,
 }
@@ -39,6 +43,8 @@ impl StackMachine {
             imma: vec![],
             op: vec![],
             imp_i: 0,
+            variables: vec![0; 255],
+            hashes: FxHashMap::default(),
             output_stream_st: vec![],
             class_stream_st: vec![],
         }
