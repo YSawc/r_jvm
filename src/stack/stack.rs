@@ -1,7 +1,7 @@
 use rustc_hash::FxHashMap;
 
 #[derive(Debug)]
-pub struct StackMachine {
+pub struct Stack {
     pub i_st0: i32,
     pub i_st1: i32,
     pub i_st2: i32,
@@ -24,9 +24,9 @@ pub struct StackMachine {
     pub class_stream_st: Vec<String>,
 }
 
-impl StackMachine {
+impl Stack {
     pub fn new() -> Self {
-        StackMachine {
+        Stack {
             i_st0: 0,
             i_st1: 0,
             i_st2: 0,

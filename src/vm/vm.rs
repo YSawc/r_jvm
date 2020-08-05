@@ -7,7 +7,7 @@ use rustc_hash::FxHashMap;
 use std::vec::Vec;
 
 pub struct VM {
-    stack_machine: stack::StackMachine,
+    stack: stack::Stack,
     gc: gc::ClassHeap,
     topic_class: class_file::ClassFile,
 }
@@ -15,7 +15,7 @@ pub struct VM {
 impl VM {
     pub fn new() -> Self {
         VM {
-            stack_machine: stack::StackMachine::new(),
+            stack: stack::Stack::new(),
             gc: gc::ClassHeap::new(),
             topic_class: class_file::ClassFile::new(),
         }
@@ -41,7 +41,7 @@ impl VM {
 
         self.gc.insert_class(class_name, reader.read().unwrap());
         self.topic_class = self.gc.get_class(class_name).unwrap().clone();
-        self.stack_machine.hashes.insert(255, vec![0]);
+        self.stack.hashes.insert(255, vec![0]);
         self.read_idx_code(0);
         self.drop_machine();
         Some(());
@@ -63,16 +63,16 @@ impl VM {
             // println!("v[{}] : {}", n, v[n]);
             match v[n] {
                 Inst::iconst_m1..=Inst::iconst_5 => {
-                    self.stack_machine.imm.push(v[n] as i64 - 3);
-                    // println!("self.stack_machine.imm : {:?}", self.stack_machine.imm);
+                    self.stack.imm.push(v[n] as i64 - 3);
+                    // println!("self.stack.imm : {:?}", self.stack.imm);
                 }
                 Inst::bipush => {
                     n += 1;
-                    self.stack_machine.imm.push(v[n] as i64);
+                    self.stack.imm.push(v[n] as i64);
                 }
                 Inst::sipush => {
-                    // println!("{:?}", self.stack_machine);
-                    self.stack_machine
+                    // println!("{:?}", self.stack);
+                    self.stack
                         .imm
                         .push(((v[n + 1] * 255) as i64) + (v[n + 2] as i64 + 1));
                     n += 2;
@@ -84,42 +84,39 @@ impl VM {
                     let output = self.topic_class.constant_pool[string_index as usize - 1]
                         .get_utf8()
                         .unwrap();
-                    self.stack_machine.output_stream_st.push(output.clone());
-                    // println!("{:?}", self.stack_machine);
+                    self.stack.output_stream_st.push(output.clone());
+                    // println!("{:?}", self.stack);
                     n += 1;
                 }
                 Inst::iload => {
-                    self.stack_machine
+                    self.stack
                         .imm
-                        .push(self.stack_machine.variables[v[n + 1] as usize] as i64);
+                        .push(self.stack.variables[v[n + 1] as usize] as i64);
                     n += 1;
                 }
-                Inst::iload_0 => self.stack_machine.imm.push(self.stack_machine.i_st0 as i64),
-                Inst::iload_1 => self.stack_machine.imm.push(self.stack_machine.i_st1 as i64),
-                Inst::iload_2 => self.stack_machine.imm.push(self.stack_machine.i_st2 as i64),
-                Inst::iload_3 => self.stack_machine.imm.push(self.stack_machine.i_st3 as i64),
-                Inst::aload_0 => self.stack_machine.imma = self.stack_machine.a_st0.clone(),
-                Inst::aload_1 => self.stack_machine.imma = self.stack_machine.a_st1.clone(),
-                Inst::aload_2 => self.stack_machine.imma = self.stack_machine.a_st2.clone(),
-                Inst::aload_3 => self.stack_machine.imma = self.stack_machine.a_st3.clone(),
+                Inst::iload_0 => self.stack.imm.push(self.stack.i_st0 as i64),
+                Inst::iload_1 => self.stack.imm.push(self.stack.i_st1 as i64),
+                Inst::iload_2 => self.stack.imm.push(self.stack.i_st2 as i64),
+                Inst::iload_3 => self.stack.imm.push(self.stack.i_st3 as i64),
+                Inst::aload_0 => self.stack.imma = self.stack.a_st0.clone(),
+                Inst::aload_1 => self.stack.imma = self.stack.a_st1.clone(),
+                Inst::aload_2 => self.stack.imma = self.stack.a_st2.clone(),
+                Inst::aload_3 => self.stack.imma = self.stack.a_st3.clone(),
                 Inst::iaload => {
-                    let idx = self.stack_machine.imm.pop().unwrap() as usize;
-                    self.stack_machine
-                        .imm
-                        .push(self.stack_machine.imma[idx] as i64);
+                    let idx = self.stack.imm.pop().unwrap() as usize;
+                    self.stack.imm.push(self.stack.imma[idx] as i64);
                 }
                 Inst::istore => {
-                    self.stack_machine.variables[v[n + 1] as usize] =
-                        self.stack_machine.imm.pop().unwrap() as i64;
+                    self.stack.variables[v[n + 1] as usize] = self.stack.imm.pop().unwrap() as i64;
                     // println!(
                     //     "self.variables[v[n + 1] as usize] : {}",
                     //     self.variables[v[n + 1] as usize]
                     // );
                     n += 1;
                 }
-                Inst::istore_1 => self.stack_machine.i_st1 = self.stack_machine.imm.pop()? as i32,
-                Inst::istore_2 => self.stack_machine.i_st2 = self.stack_machine.imm.pop()? as i32,
-                Inst::istore_3 => self.stack_machine.i_st3 = self.stack_machine.imm.pop()? as i32,
+                Inst::istore_1 => self.stack.i_st1 = self.stack.imm.pop()? as i32,
+                Inst::istore_2 => self.stack.i_st2 = self.stack.imm.pop()? as i32,
+                Inst::istore_3 => self.stack.i_st3 = self.stack.imm.pop()? as i32,
                 Inst::astore_1..=Inst::astore_3 => {
                     let store_idx = v[n + 1] - 42;
                     match v[n + 2] {
@@ -136,35 +133,32 @@ impl VM {
                             n += 5;
                         }
                     }
-                    println!("{:?}", self.stack_machine.hashes);
+                    println!("{:?}", self.stack.hashes);
                 }
-                Inst::pop => self
-                    .stack_machine
-                    .imm
-                    .push(self.stack_machine.op.pop()? as i64),
+                Inst::pop => self.stack.imm.push(self.stack.op.pop()? as i64),
                 Inst::new => n += 2,
                 Inst::iadd => {
-                    let ri = self.stack_machine.imm.pop()?;
-                    let li = self.stack_machine.imm.pop()?;
+                    let ri = self.stack.imm.pop()?;
+                    let li = self.stack.imm.pop()?;
                     let res = ri + li;
-                    self.stack_machine.imm.push(res);
+                    self.stack.imm.push(res);
                 }
                 Inst::irem => {
-                    let ri = self.stack_machine.imm.pop()?;
-                    let li = self.stack_machine.imm.pop()?;
+                    let ri = self.stack.imm.pop()?;
+                    let li = self.stack.imm.pop()?;
                     let res = li - (li / ri) * ri;
-                    self.stack_machine.imm.push(res);
+                    self.stack.imm.push(res);
                 }
                 Inst::iinc => {
                     self.increment_i(v[n + 1], v[n + 2]);
                     // println!(
-                    //     "self.stack_machine after read iinc : {:?}",
-                    //     self.stack_machine
+                    //     "self.stack after read iinc : {:?}",
+                    //     self.stack
                     // );
                     n += 2;
                 }
                 Inst::ifeq => {
-                    let t = self.stack_machine.imm.pop()?;
+                    let t = self.stack.imm.pop()?;
                     if t == 0 {
                         n += (v[n as usize + 1] as usize >> 8) + v[n as usize + 2] as usize - 1;
                     } else {
@@ -172,7 +166,7 @@ impl VM {
                     }
                 }
                 Inst::ifne => {
-                    let t = self.stack_machine.imm.pop()?;
+                    let t = self.stack.imm.pop()?;
                     if t != 0 {
                         n += (v[n as usize + 1] as usize >> 8) + v[n as usize + 2] as usize - 1;
                     } else {
@@ -180,7 +174,7 @@ impl VM {
                     }
                 }
                 Inst::ifge => {
-                    let t = self.stack_machine.imm.pop()?;
+                    let t = self.stack.imm.pop()?;
                     if t >= 0 {
                         n += (v[n as usize + 1] as usize >> 8) + v[n as usize + 2] as usize - 1;
                     } else {
@@ -188,23 +182,23 @@ impl VM {
                     }
                 }
                 Inst::if_icmpge => {
-                    self.stack_machine.imp_i = check_loop_base(n as i32, v).unwrap() as i32;
-                    if self.stack_machine.imm.pop() <= self.stack_machine.imm.pop() {
+                    self.stack.imp_i = check_loop_base(n as i32, v).unwrap() as i32;
+                    if self.stack.imm.pop() <= self.stack.imm.pop() {
                         n += (v[n as usize + 1] as usize >> 8) | v[n as usize + 2] as usize - 1;
                     } else {
                         n += 2;
                     }
                 }
                 Inst::if_icmpgt => {
-                    self.stack_machine.imp_i = check_loop_base(n as i32, v).unwrap();
-                    if self.stack_machine.imm.pop() < self.stack_machine.imm.pop() {
+                    self.stack.imp_i = check_loop_base(n as i32, v).unwrap();
+                    if self.stack.imm.pop() < self.stack.imm.pop() {
                         n += (v[n as usize + 1] as usize >> 8) | v[n as usize + 2] as usize - 1;
                     } else {
                         n += 2;
                     }
                 }
                 Inst::goto => match v[n as usize + 1] {
-                    255 => n = self.stack_machine.imp_i as usize - 1,
+                    255 => n = self.stack.imp_i as usize - 1,
                     _ => n += (v[n as usize + 1] as usize >> 8) | v[n as usize + 2] as usize - 1,
                 },
                 Inst::lookupswitch => {
@@ -223,7 +217,7 @@ impl VM {
                         n += 8;
                     }
 
-                    let imm = self.stack_machine.imm.pop().unwrap();
+                    let imm = self.stack.imm.pop().unwrap();
 
                     let goto_idx: u8 = match idx_hs.get_mut(&(imm as u8)) {
                         Some(n) => *n,
@@ -232,16 +226,16 @@ impl VM {
                     n = goto_idx as usize;
                 }
                 Inst::ireturn => {
-                    let ret_i = self.stack_machine.imm.pop().unwrap();
-                    self.stack_machine.imm.push(ret_i);
-                    println!("--- self.stack_machine after read ireturn ---");
-                    println!("{:?}", self.stack_machine);
+                    let ret_i = self.stack.imm.pop().unwrap();
+                    self.stack.imm.push(ret_i);
+                    println!("--- self.stack after read ireturn ---");
+                    println!("{:?}", self.stack);
                     println!("---------------------------------------------");
                     return Some(());
                 }
                 Inst::_return => {
-                    println!("--- self.stack_machine after read ireturn ---");
-                    println!("{:?}", self.stack_machine);
+                    println!("--- self.stack after read ireturn ---");
+                    println!("{:?}", self.stack);
                     println!("---------------------------------------------");
                     return Some(());
                 }
@@ -284,7 +278,7 @@ impl VM {
 
                     // println!("{}.{}:{}", field_summary, detail_of_constructor, types_info);
 
-                    self.stack_machine
+                    self.stack
                         .class_stream_st
                         .push(field_summary.to_owned() + ":" + &detail_of_constructor);
 
@@ -306,9 +300,9 @@ impl VM {
                 }
                 Inst::dup => n += 2,
                 Inst::newarray => {
-                    let arr_count = self.stack_machine.hashes.get_mut(&255).unwrap()[0];
+                    let arr_count = self.stack.hashes.get_mut(&255).unwrap()[0];
                     self.new_array(arr_count);
-                    // println!("stackmachine read after newarray {:?}", self.stack_machine);
+                    // println!("stackmachine read after newarray {:?}", self.stack);
                     // println!("hashes read after newarray{:?}", self.hashes);
                     n += 1;
                 }
@@ -369,10 +363,10 @@ impl VM {
 
     pub fn push_to_i_st(&mut self, idx: u8) -> Option<()> {
         match idx {
-            0 => self.stack_machine.i_st0 = self.stack_machine.imm.pop()? as i32,
-            1 => self.stack_machine.i_st1 = self.stack_machine.imm.pop()? as i32,
-            2 => self.stack_machine.i_st2 = self.stack_machine.imm.pop()? as i32,
-            3 => self.stack_machine.i_st3 = self.stack_machine.imm.pop()? as i32,
+            0 => self.stack.i_st0 = self.stack.imm.pop()? as i32,
+            1 => self.stack.i_st1 = self.stack.imm.pop()? as i32,
+            2 => self.stack.i_st2 = self.stack.imm.pop()? as i32,
+            3 => self.stack.i_st3 = self.stack.imm.pop()? as i32,
             _ => panic!(),
         }
         Some(())
@@ -417,45 +411,44 @@ impl VM {
     }
 
     pub fn drop_machine(&mut self) -> () {
-        self.drop_stack_machine();
+        self.drop_stack();
         self.drop_variables();
         self.drop_hashes();
     }
 
-    pub fn drop_stack_machine(&mut self) -> () {
-        self.stack_machine = stack::StackMachine::new();
+    pub fn drop_stack(&mut self) -> () {
+        self.stack = stack::Stack::new();
     }
 
     pub fn drop_variables(&mut self) -> () {
-        self.stack_machine.variables = vec![0; 255];
+        self.stack.variables = vec![0; 255];
     }
 
     pub fn drop_hashes(&mut self) -> () {
-        self.stack_machine.hashes = FxHashMap::default();
+        self.stack.hashes = FxHashMap::default();
     }
 
     pub fn increment_i(&mut self, idx: u8, c: u8) -> Option<()> {
         match idx {
-            0 => self.stack_machine.i_st0 += c as i32,
-            1 => self.stack_machine.i_st1 += c as i32,
-            2 => self.stack_machine.i_st2 += c as i32,
-            3 => self.stack_machine.i_st3 += c as i32,
-            _ => self.stack_machine.variables[idx as usize] += c as i64,
+            0 => self.stack.i_st0 += c as i32,
+            1 => self.stack.i_st1 += c as i32,
+            2 => self.stack.i_st2 += c as i32,
+            3 => self.stack.i_st3 += c as i32,
+            _ => self.stack.variables[idx as usize] += c as i64,
         }
         Some(())
     }
 
     pub fn new_array(&mut self, arr_count: u8) -> Option<()> {
-        self.stack_machine.hashes.get_mut(&255).unwrap()[0] += 1;
+        self.stack.hashes.get_mut(&255).unwrap()[0] += 1;
         match arr_count {
-            0 => self.stack_machine.a_st1 = vec![0; self.stack_machine.imm.pop().unwrap() as usize],
-            1 => self.stack_machine.a_st2 = vec![0; self.stack_machine.imm.pop().unwrap() as usize],
-            2 => self.stack_machine.a_st3 = vec![0; self.stack_machine.imm.pop().unwrap() as usize],
+            0 => self.stack.a_st1 = vec![0; self.stack.imm.pop().unwrap() as usize],
+            1 => self.stack.a_st2 = vec![0; self.stack.imm.pop().unwrap() as usize],
+            2 => self.stack.a_st3 = vec![0; self.stack.imm.pop().unwrap() as usize],
             _ => {
-                self.stack_machine.hashes.insert(
-                    arr_count,
-                    vec![0; self.stack_machine.imm.pop().unwrap() as usize],
-                );
+                self.stack
+                    .hashes
+                    .insert(arr_count, vec![0; self.stack.imm.pop().unwrap() as usize]);
                 ()
             }
         }
@@ -467,50 +460,47 @@ impl VM {
         // println!("arr_idx : {}", arr_idx);
         // println!("insert_num : {}", insert_num);
         match store_idx {
-            1 => self.stack_machine.a_st1[arr_idx as usize] = insert_num as i32,
-            2 => self.stack_machine.a_st2[arr_idx as usize] = insert_num as i32,
-            3 => self.stack_machine.a_st3[arr_idx as usize] = insert_num as i32,
-            _ => {
-                self.stack_machine.hashes.get_mut(&store_idx).unwrap()[arr_idx as usize] =
-                    insert_num
-            }
+            1 => self.stack.a_st1[arr_idx as usize] = insert_num as i32,
+            2 => self.stack.a_st2[arr_idx as usize] = insert_num as i32,
+            3 => self.stack.a_st3[arr_idx as usize] = insert_num as i32,
+            _ => self.stack.hashes.get_mut(&store_idx).unwrap()[arr_idx as usize] = insert_num,
         }
 
         Some(())
     }
 
     pub fn invoke_virtual(&mut self, str: String) {
-        // println!("{:?}", self.stack_machine);
-        match self.stack_machine.class_stream_st.pop().unwrap().as_str() {
+        // println!("{:?}", self.stack);
+        match self.stack.class_stream_st.pop().unwrap().as_str() {
             "java/io/PrintStream:println" => match &*str {
                 "(Ljava/lang/String;)V" => {
-                    llvm::inkwell::println(self.stack_machine.output_stream_st.pop().unwrap())
+                    llvm::inkwell::println(self.stack.output_stream_st.pop().unwrap())
                 }
                 "(I)V" => {
-                    let n = self.stack_machine.imm.pop().unwrap();
+                    let n = self.stack.imm.pop().unwrap();
                     llvm::inkwell::println(n.to_string());
                 }
                 e => unimplemented!("{}", e),
             },
             "java/lang/StringBuilder:append" => match &*str {
                 "(I)Ljava/lang/StringBuilder;" => {
-                    let i = self.stack_machine.imm.pop().unwrap();
+                    let i = self.stack.imm.pop().unwrap();
                     let f = format!("{}", i);
-                    self.stack_machine.output_stream_st.push(f);
+                    self.stack.output_stream_st.push(f);
                 }
                 "(Ljava/lang/String;)Ljava/lang/StringBuilder;" => {
-                    let s = self.stack_machine.output_stream_st.pop().unwrap();
+                    let s = self.stack.output_stream_st.pop().unwrap();
                     let f = format!("{}", s);
-                    self.stack_machine.output_stream_st.push(f);
+                    self.stack.output_stream_st.push(f);
                 }
                 e => unimplemented!("{}", e),
             },
             "java/lang/StringBuilder:toString" => {
-                for _ in 0..self.stack_machine.output_stream_st.len() - 1 {
-                    let l = self.stack_machine.output_stream_st.pop().unwrap();
-                    let r = self.stack_machine.output_stream_st.pop().unwrap();
+                for _ in 0..self.stack.output_stream_st.len() - 1 {
+                    let l = self.stack.output_stream_st.pop().unwrap();
+                    let r = self.stack.output_stream_st.pop().unwrap();
                     let b = format!("{}{}", r, l);
-                    self.stack_machine.output_stream_st.push(b);
+                    self.stack.output_stream_st.push(b);
                 }
             }
             e => unimplemented!("{}", e),
