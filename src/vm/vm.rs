@@ -136,7 +136,17 @@ impl VM {
                     println!("{:?}", self.stack.hashes);
                 }
                 Inst::pop => self.stack.imm.push(self.stack.op.pop()? as i64),
-                Inst::new => n += 2,
+                Inst::new => {
+                    let idx = (v[n as usize + 1] as usize >> 8) + v[n as usize + 2] as usize - 1;
+                    let class_index = self.topic_class.constant_pool[idx]
+                        .get_class_class_index()
+                        .unwrap();
+                    let _s = self.topic_class.constant_pool[class_index as usize - 1]
+                        .get_utf8()
+                        .unwrap();
+                    // println!("new : {}", _s);
+                    n += 2;
+                }
                 Inst::iadd => {
                     let ri = self.stack.imm.pop()?;
                     let li = self.stack.imm.pop()?;
@@ -229,13 +239,13 @@ impl VM {
                     let ret_i = self.stack.imm.pop().unwrap();
                     self.stack.imm.push(ret_i);
                     println!("--- self.stack after read ireturn ---");
-                    println!("{:?}", self.stack);
+                    self.print_stacks();
                     println!("---------------------------------------------");
                     return Some(());
                 }
                 Inst::_return => {
                     println!("--- self.stack after read ireturn ---");
-                    println!("{:?}", self.stack);
+                    self.print_stacks();
                     println!("---------------------------------------------");
                     return Some(());
                 }
@@ -471,6 +481,10 @@ impl VM {
 
     pub fn invoke_virtual(&mut self, str: String) {
         // println!("{:?}", self.stack);
+        // println!(
+        //     "self.stack.class_stream_st : {:?} ",
+        //     self.stack.class_stream_st
+        // );
         match self.stack.class_stream_st.pop().unwrap().as_str() {
             "java/io/PrintStream:println" => match &*str {
                 "(Ljava/lang/String;)V" => {
@@ -531,6 +545,26 @@ impl VM {
             .unwrap();
 
         println!("{}.{}:{}", base_class, stream, field_class);
+    }
+
+    fn print_stacks(&self) {
+        println!(
+            "i_st0 : {}, i_st1 : {}, i_st2 : {}, i_st3 : {}, f_st0 : {}, f_st1 : {}, f_st2 : {}, f_st3 : {}, a_st0 : {:?}, a_st1 : {:?}, a_st2 : {:?}, a_st3 : {:?}, imm: {:?}, imp_i : {}",
+            self.stack.i_st0,
+            self.stack.i_st1,
+            self.stack.i_st2,
+            self.stack.i_st3,
+            self.stack.f_st0,
+            self.stack.f_st1,
+            self.stack.f_st2,
+            self.stack.f_st3,
+            self.stack.a_st0,
+            self.stack.a_st2,
+            self.stack.a_st3,
+            self.stack.imm,
+            self.stack.imma,
+            self.stack.imp_i
+        );
     }
 }
 
